@@ -49,7 +49,7 @@ vec3 table_pos(0.0f, 0.0f, 0.0f);
 
 vec3 car_pos(0.0f, 0.0f, 0.0f);
 vec3 butter_pos(5.0f, 1.0f, 0.0f);
-vec4 car_color(1.0f, 0.0f, 0.0f, 0.7f);
+vec4 car_color(1.0f, 1.0f, 1.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
 vec4 cheerio_color(1.0f, 0.874f, 0.0f, 1.0f);
 vec4 butter_foil_color(0.0f, 0.0f, 0.9f, 1.0f);
@@ -58,9 +58,8 @@ vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 20.0f, car_color, color_tire);
-Orange orange(orange_pos, car_color, color_tire, 1.0f, 0.2f);
 Butter butter(butter_pos, butter_foil_color);
-Orange orange(orange_pos, car_color, color_tire, 1.0f, { 0.2f, 0 , 0 });
+Orange orange(orange_pos, car_color, color_tire, 1.0f, { 5.0f, 0 , 0 });
 std::vector<Cheerio> cheerios;
 
 
@@ -101,6 +100,8 @@ long myTime,timebase = 0,frame = 0;
 char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
+float oldTime = 0.0f;
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -137,6 +138,11 @@ void changeSize(int w, int h) {
 
 void renderScene(void) {
 
+	float dt;
+	int t = glutGet(GLUT_ELAPSED_TIME);
+	dt = (t - oldTime) / 1000;
+	oldTime = t;
+
 	GLint loc;
 
 	FrameCount++;
@@ -151,7 +157,12 @@ void renderScene(void) {
 		up = vec3(0, 0, 1);
 	}
 	cameras[2]->setPosition({ orange.getPosition().x - 5.0f, orange.getPosition().y + 5.0f, orange.getPosition().z });
-	cameras[current_camera]->lookAtPoint({orange.getPosition().x, orange.getPosition().y, orange.getPosition().z},up);
+	if (current_camera == 2) {
+		cameras[2]->lookAtPoint({ orange.getPosition().x, orange.getPosition().y, orange.getPosition().z }, up);
+	}
+	else {
+		cameras[0]->lookAtPoint({ 0, 0, 0 }, up);
+	}
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
 
@@ -172,6 +183,7 @@ void renderScene(void) {
 		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
 
 	for (int i = 0; i < 3; ++i) {
 

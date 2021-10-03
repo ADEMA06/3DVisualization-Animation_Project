@@ -1,12 +1,15 @@
 #ifndef __ORANGE_H__
 #define __ORANGE_H__
 
+#define _USE_MATH_DEFINES
 #include "GameObject.h"
 #include <sstream>
 #include <string>
 #include "geometry.h"
 #include "AVTmathLib.h"
 #include "VSShaderlib.h"
+#include <random>
+#include <math.h>
 
 /// The storage for matrices
 extern float mMatrix[COUNT_MATRICES][16];
@@ -22,6 +25,7 @@ class Orange : public GameObject {
     vec4 stalk_color;
     int speed_level;
     float radius;
+	float dirRotation;
 	bool is_moving;
 
 public:
@@ -31,7 +35,29 @@ public:
         this->stalk_color = stalk_color;
         this->radius = radius;
 		this->is_moving = true;
+
+		this->dirRotation = std::atan(speed.x / speed.z);
     }
+
+	void updatePosition(vec3 tablePos, float tableWidth, float tableHeight, float dt) {
+		setPosition(getPosition() + vec3(getSpeed().x*dt, getSpeed().y * dt, getSpeed().z * dt));
+		setRotAngle(getRotAngle() + rotationSpeed()*dt);
+		printf("%f\n", getRotAngle());
+		int offset[2] = { -1, 1 };
+		/*if (getPosition().x > tablePos.x + tableWidth / 2 || getPosition().x < tablePos.x - tableWidth / 2 || getPosition().y > tablePos.y + tableHeight / 2 || getPosition().y < tablePos.y - tableHeight / 2) {
+			int j = rand() % 2;
+			vec3 position = vec3(offset[j] * rand() % ((int)tableWidth/2), 0.0f, offset[j] * (rand() % ((int)tableHeight/2)));
+			setPosition(position);
+		}*/
+		
+	}
+
+	float rotationSpeed() {
+		float speedIntensity = std::cbrt(std::pow(getSpeed().x, 3) + std::pow(getSpeed().y, 3) + std::pow(getSpeed().z, 3));
+		return (speedIntensity / 2 * M_PI * radius);
+	}
+
+	
 
     void createOrange() {
         float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -41,7 +67,7 @@ public:
         float shininess = 100.0f;
         int texcount = 0;
         vec3 sphere_pos = getPosition() +  vec3(0,radius,0);
-        sphere = createSphere(radius, 20);
+        sphere = createSphere(radius, 100);
         sphere = setMesh(sphere, amb, sphere_diff, spec, emissive, shininess, texcount, sphere_pos);
 		sphere.rotAngle = 10.0f;
         float stalk_diff[] = { stalk_color.x, stalk_color.y, stalk_color.z, stalk_color.w };
@@ -61,13 +87,9 @@ public:
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, sphere.mat.shininess);
 		pushMatrix(MODEL);
-		sphere.position = sphere.position + getSpeed();
-		sphere.rotation.x -= sphere.rotAngle;
-		setPosition(getPosition() + getSpeed());
-		if (sphere.rotation.x == -360)
-			sphere.rotation.x = 0;
-		translate(MODEL, sphere.position.x, sphere.position.y, sphere.position.z);
-		rotate(MODEL, sphere.rotation.x, 0.0f, 0.0f, -1.0f);
+		translate(MODEL, getPosition().x, getPosition().y+radius, getPosition().z);
+		rotate(MODEL, getRotAngle(), 0.0f, 0.0f, 1.0f);
+		translate(MODEL, 0, 0, 0);
 		
 			
 		// send matrices to OGL
@@ -98,10 +120,10 @@ public:
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, stalk.mat.shininess);
 		pushMatrix(MODEL);
-		stalk.position = stalk.position + getSpeed();
-		translate(MODEL, stalk.position.x, stalk.position.y-radius, stalk.position.z);
-		rotate(MODEL, sphere.rotation.x, 0.0f, 0.0f, 1.0f);
+		translate(MODEL, getPosition().x, getPosition().y+radius, getPosition().z);
+		rotate(MODEL, -getRotAngle(), 0.0f, 0.0f, 1.0f);
 		translate(MODEL, 0, radius, 0);
+		rotate(MODEL, dirRotation, 0.0f, 1.0f, 0.0f);
 		
 
 		// send matrices to OGL
