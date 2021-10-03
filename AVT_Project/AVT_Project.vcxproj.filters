@@ -68,6 +68,9 @@
     <ClInclude Include="Cheerio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Butter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -35,6 +35,7 @@
 #include "Camera.h"
 #include "PerspectiveCamera.h"
 #include "OrthographicCamera.h"
+#include "Butter.h"
 
 using namespace std;
 
@@ -47,14 +48,18 @@ unsigned int FrameCount = 0;
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
 vec3 car_pos(0.0f, 0.0f, 0.0f);
+vec3 butter_pos(5.0f, 1.0f, 0.0f);
 vec4 car_color(1.0f, 0.0f, 0.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
 vec4 cheerio_color(1.0f, 0.874f, 0.0f, 1.0f);
+vec4 butter_foil_color(0.0f, 0.0f, 0.9f, 1.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 20.0f, car_color, color_tire);
+Orange orange(orange_pos, car_color, color_tire, 1.0f, 0.2f);
+Butter butter(butter_pos, butter_foil_color);
 Orange orange(orange_pos, car_color, color_tire, 1.0f, { 0.2f, 0 , 0 });
 std::vector<Cheerio> cheerios;
 
@@ -162,6 +167,7 @@ void renderScene(void) {
 
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	for (int i = 0; i < cheerios.size(); i++) {
 		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
@@ -393,6 +399,7 @@ void init()
 	table.createTable();
 	car.createCar();
 	orange.createOrange();
+	butter.createButter();
 	MyMesh amesh;
 	float height = 10.0f;
 	amesh = createCylinder(height, 0.05f, 10);
