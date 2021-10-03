@@ -14,6 +14,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <random>
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
@@ -29,6 +30,7 @@
 #include "geometry.h"
 #include "Table.h"
 #include "Car.h"
+#include "Cheerio.h"
 
 using namespace std;
 
@@ -42,9 +44,11 @@ vec3 table_pos(0.0f, 0.0f, 0.0f);
 vec3 car_pos(0.0f, 0.0f, 0.0f);
 vec4 car_color(1.0f, 0.0f, 0.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
+vec4 cheerio_color(1.0f, 0.874f, 0.0f, 1.0f);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 20.0f, car_color, color_tire);
+std::vector<Cheerio> cheerios;
 
 VSShaderLib shader;
 
@@ -147,6 +151,9 @@ void renderScene(void) {
 
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	for (int i = 0; i < cheerios.size(); i++) {
+		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	}
 
 	for (int i = 0; i < 3; ++i) {
 
@@ -348,6 +355,7 @@ int setMesh(MyMesh mesh, float* amb, float* diff, float* spec, float* emissive, 
 
 void init()
 {
+	srand(time(0));
 	// set the camera position based on its spherical coordinates
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
@@ -361,8 +369,15 @@ void init()
 	float shininess= 100.0f;
 	int texcount = 0;
 
-
-
+	int n_cherrios = rand() % 5;
+	int offset[2] = { -1, 1 };
+	for (int i = 0; i < n_cherrios; i++) {
+		int j = rand() % 2;
+		vec3 position = vec3(offset[j] * rand() % 45, 0.0f, offset[j] * (rand() % 45));
+		Cheerio cheerio(position, vec4(1.0f, 0.8745f, 0.0f, 1.0f));
+		cheerio.createCheerio();
+		cheerios.push_back(cheerio);
+	}
 	
 	table.createTable();
 	car.createCar();

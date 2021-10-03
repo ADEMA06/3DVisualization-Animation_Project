@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h" />
     <ClInclude Include="Car.h" />
+    <ClInclude Include="Cheerio.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="cube.h" />
