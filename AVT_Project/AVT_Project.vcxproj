@@ -169,6 +169,7 @@
     <ClInclude Include="Cheerio.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Orange.h" />
+    <ClInclude Include="Butter.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="geometry.h" />
