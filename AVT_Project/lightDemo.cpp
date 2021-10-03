@@ -32,6 +32,9 @@
 #include "Car.h"
 #include "Orange.h"
 #include "Cheerio.h"
+#include "Camera.h"
+#include "PerspectiveCamera.h"
+#include "OrthographicCamera.h"
 
 using namespace std;
 
@@ -52,8 +55,12 @@ vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 20.0f, car_color, color_tire);
-Orange orange(orange_pos, car_color, color_tire, 1.0f, 0.2f);
+Orange orange(orange_pos, car_color, color_tire, 1.0f, { 0.2f, 0 , 0 });
 std::vector<Cheerio> cheerios;
+
+
+int current_camera = 2;
+Camera* cameras[3];
 
 VSShaderLib shader;
 
@@ -102,7 +109,8 @@ void timer(int value)
 
 void refresh(int value)
 {
-	//PUT YOUR CODE HERE
+	glutPostRedisplay();
+	glutTimerFunc(1000 / 60, refresh, 0);
 }
 
 // ------------------------------------------------------------
@@ -111,17 +119,9 @@ void refresh(int value)
 //
 
 void changeSize(int w, int h) {
-
-	float ratio;
-	// Prevent a divide by zero, when window is too short
-	if(h == 0)
-		h = 1;
-	// set the viewport to be the entire window
-	glViewport(0, 0, w, h);
-	// set the projection matrix
-	ratio = (1.0f * w) / h;
-	loadIdentity(PROJECTION);
-	perspective(53.13f, ratio, 0.1f, 1000.0f);
+	for (int i = 0; i < 2; i++) {
+		cameras[i]->setViewPort(w, h);
+	}
 }
 
 
@@ -140,7 +140,13 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0,0,0, 0,1,0);
+	vec3 up(0, 1, 0);
+	vec3 cameraPos = cameras[current_camera]->getPosition();
+	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
+		up = vec3(0, 0, 1);
+	}
+	cameras[2]->setPosition({ orange.getPosition().x - 5.0f, orange.getPosition().y + 5.0f, orange.getPosition().z });
+	cameras[current_camera]->lookAtPoint({orange.getPosition().x, orange.getPosition().y, orange.getPosition().z},up);
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
 
@@ -218,6 +224,9 @@ void processKeys(unsigned char key, int xx, int yy)
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+		case '1': current_camera = 0; break;
+		case '2': current_camera = 1; break;
+		case '3': current_camera = 2; break;
 	}
 }
 
@@ -293,6 +302,7 @@ void processMouseMotion(int xx, int yy)
 	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camY = rAux *   						       sin(betaAux * 3.14f / 180.0f);
 
+	cameras[current_camera]->setPosition({ camX, camY, camZ });
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();
 }
@@ -362,12 +372,7 @@ int setMesh(MyMesh mesh, float* amb, float* diff, float* spec, float* emissive, 
 void init()
 {
 	srand(time(0));
-	// set the camera position based on its spherical coordinates
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
 
-	
 	float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
 	float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
 	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
@@ -428,6 +433,16 @@ void init()
 
 int main(int argc, char **argv) {
 
+
+	//	Camera initialization	
+	OrtographicCamera camera1({ 15.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, false, 0.1f, 1000.0f, 100.0f, 100.0f, 100.0f, 100.0f);
+	PerspectiveCamera camera2({ 0.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.1f, 1000.0f, 53.13f);
+	PerspectiveCamera camera3({ orange.getPosition().x - 5.0f, orange.getPosition().y + 5.0f, orange.getPosition().z }, { orange.getPosition().x, orange.getPosition().y, orange.getPosition().z }, false, 0.1f, 1000.0f, 53.13f);
+
+	cameras[0] = &camera1;
+	cameras[1] = &camera2;
+	cameras[2] = &camera3;
+
 //  GLUT initialization
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_MULTISAMPLE);
@@ -446,8 +461,8 @@ int main(int argc, char **argv) {
 	glutReshapeFunc(changeSize);
 
 	glutTimerFunc(0, timer, 0);
-	glutIdleFunc(renderScene);  // Use it for maximum performance
-	//glutTimerFunc(0, refresh, 0);    //use it to to get 60 FPS whatever
+	//glutIdleFunc(renderScene);  // Use it for maximum performance
+	glutTimerFunc(1000/60, refresh, 0);    //use it to to get 60 FPS whatever
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);

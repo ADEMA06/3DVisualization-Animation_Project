@@ -15,7 +15,7 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 /// The normal matrix
 extern float mNormal3x3[9];
 
-class Orange : GameObject {
+class Orange : public GameObject {
     struct MyMesh stalk;
     struct MyMesh sphere;
     vec4 sphere_color;
@@ -25,7 +25,7 @@ class Orange : GameObject {
 	bool is_moving;
 
 public:
-    Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, float speed) : GameObject(position, speed) {
+    Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, vec3 speed) : GameObject(position, speed) {
         this->speed_level = 0;
         this->sphere_color = sphere_color;
         this->stalk_color = stalk_color;
@@ -63,6 +63,7 @@ public:
 		pushMatrix(MODEL);
 		sphere.position = sphere.position + getSpeed();
 		sphere.rotation.x -= sphere.rotAngle;
+		setPosition(getPosition() + getSpeed());
 		if (sphere.rotation.x == -360)
 			sphere.rotation.x = 0;
 		translate(MODEL, sphere.position.x, sphere.position.y, sphere.position.z);
