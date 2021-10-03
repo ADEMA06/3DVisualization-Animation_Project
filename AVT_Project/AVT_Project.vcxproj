@@ -167,6 +167,7 @@
     <ClInclude Include="AVTmathLib.h" />
     <ClInclude Include="Car.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Orange.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="geometry.h" />

@@ -18,6 +18,17 @@ public:
         this->position = position;
     }
  
+    GameObject(vec3 position, vec3 speed) {
+        this->position = position;
+        this->speed = speed;
+    }
+
+    GameObject(vec3 position, vec3 speed, vec3 rotation) {
+        this->position = position;
+        this->speed = speed;
+        this->rotation = rotation;
+    }
+
     vec3 getPosition(){
         return this->position;
     }

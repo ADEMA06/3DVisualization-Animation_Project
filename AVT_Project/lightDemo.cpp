@@ -29,6 +29,7 @@
 #include "geometry.h"
 #include "Table.h"
 #include "Car.h"
+#include "Orange.h"
 
 using namespace std;
 
@@ -39,12 +40,16 @@ int WinX = 640, WinY = 480;
 unsigned int FrameCount = 0;
 
 vec3 table_pos(0.0f, 0.0f, 0.0f);
+
 vec3 car_pos(0.0f, 0.0f, 0.0f);
 vec4 car_color(1.0f, 0.0f, 0.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
 
+vec3 orange_pos(5.0f, 0.0f, 5.0f);
+
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 20.0f, car_color, color_tire);
+Orange orange(orange_pos, car_color, color_tire, 1.0f, 0.2f);
 
 VSShaderLib shader;
 
@@ -147,6 +152,7 @@ void renderScene(void) {
 
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 
 	for (int i = 0; i < 3; ++i) {
 
@@ -366,6 +372,7 @@ void init()
 	
 	table.createTable();
 	car.createCar();
+	orange.createOrange();
 	MyMesh amesh;
 	float height = 10.0f;
 	amesh = createCylinder(height, 0.05f, 10);
