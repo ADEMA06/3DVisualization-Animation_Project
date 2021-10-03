@@ -58,7 +58,6 @@ vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 20.0f, car_color, color_tire);
-Orange orange(orange_pos, car_color, color_tire, 1.0f, 0.2f);
 Butter butter(butter_pos, butter_foil_color);
 Orange orange(orange_pos, car_color, color_tire, 1.0f, { 0.2f, 0 , 0 });
 std::vector<Cheerio> cheerios;
