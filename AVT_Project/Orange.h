@@ -11,13 +11,6 @@
 #include <random>
 #include <math.h>
 
-/// The storage for matrices
-extern float mMatrix[COUNT_MATRICES][16];
-extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
-
-/// The normal matrix
-extern float mNormal3x3[9];
-
 class Orange : public GameObject {
     struct MyMesh stalk;
     struct MyMesh sphere;
@@ -42,19 +35,17 @@ public:
 	void updatePosition(vec3 tablePos, float tableWidth, float tableHeight, float dt) {
 		setPosition(getPosition() + vec3(getSpeed().x*dt, getSpeed().y * dt, getSpeed().z * dt));
 		setRotAngle(getRotAngle() + rotationSpeed()*dt);
-		printf("%f\n", getRotAngle());
 		int offset[2] = { -1, 1 };
-		/*if (getPosition().x > tablePos.x + tableWidth / 2 || getPosition().x < tablePos.x - tableWidth / 2 || getPosition().y > tablePos.y + tableHeight / 2 || getPosition().y < tablePos.y - tableHeight / 2) {
+		if (getPosition().x > tablePos.x + tableWidth / 2 || getPosition().x < tablePos.x - tableWidth / 2 || getPosition().y > tablePos.y + tableHeight / 2 || getPosition().y < tablePos.y - tableHeight / 2) {
 			int j = rand() % 2;
 			vec3 position = vec3(offset[j] * rand() % ((int)tableWidth/2), 0.0f, offset[j] * (rand() % ((int)tableHeight/2)));
 			setPosition(position);
-		}*/
-		
+		}
 	}
 
 	float rotationSpeed() {
-		float speedIntensity = std::cbrt(std::pow(getSpeed().x, 3) + std::pow(getSpeed().y, 3) + std::pow(getSpeed().z, 3));
-		return (speedIntensity / 2 * M_PI * radius);
+		float speedIntensity = std::sqrt(std::pow(getSpeed().x, 2) + std::pow(getSpeed().y, 2) + std::pow(getSpeed().z, 2));
+		return (speedIntensity*57.29 / radius);
 	}
 
 	
@@ -76,74 +67,51 @@ public:
         stalk = setMesh(stalk, amb, stalk_diff, spec, emissive, shininess, texcount, stalk_pos);
     }
 
-	void drawOrange(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
-		GLint loc;
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, sphere.mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, sphere.mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, sphere.mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, sphere.mat.shininess);
-		pushMatrix(MODEL);
-		translate(MODEL, getPosition().x, getPosition().y+radius, getPosition().z);
+	void sphereTransformations() {
+		translate(MODEL, getPosition().x, getPosition().y + radius, getPosition().z);
 		rotate(MODEL, getRotAngle(), 0.0f, 0.0f, 1.0f);
 		translate(MODEL, 0, 0, 0);
-		
-			
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+	}
 
-		// Render mesh
-		glBindVertexArray(sphere.vao);
+	void stalkTransformations() {
+		translate(MODEL, getPosition().x, getPosition().y + radius, getPosition().z);
+		//rotate(MODEL, dirRotation, 0.0f, 0.0f, 1.0f);
+		//rotate(MODEL, -getRotAngle(), 0.0f, 0.0f, 1.0f);
 
-		if (!shader.isProgramValid()) {
-			printf("Program Not Valid!\n");
-			exit(1);
-		}
-		glDrawElements(sphere.type, sphere.numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		//Logica da rotacao da laranja
+		//Pego no vetor da velocidade, encontro um vetor perpendicular no mesmo plano, esse vai ser o eixo de rotacao,
+		//e simplesmente faco o rotae com o rotAngle nesse eixo. So tem o caso limite quando rodas 90 graus para cima,
+		//o que e meio weird
+		vec3 speed = getSpeed();
+		float mag = sqrt(speed.x * speed.x + speed.y * speed.y + speed.z * speed.z);
 
-		popMatrix(MODEL);
-
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, stalk.mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, stalk.mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, stalk.mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, stalk.mat.shininess);
-		pushMatrix(MODEL);
-		translate(MODEL, getPosition().x, getPosition().y+radius, getPosition().z);
-		rotate(MODEL, -getRotAngle(), 0.0f, 0.0f, 1.0f);
+		speed.x /= mag;
+		speed.y /= mag;
+		speed.z /= mag;
+		vec3 res;
+		res.x = speed.y * 0.0f - 1.0f * speed.z;
+		res.y = speed.z * 0.0f - 0.0f * speed.x;
+		res.z = speed.x * 1.0f - 0.0f * speed.y;
+		rotate(MODEL, -getRotAngle(), res.x, res.y, res.z);
 		translate(MODEL, 0, radius, 0);
-		rotate(MODEL, dirRotation, 0.0f, 1.0f, 0.0f);
-		
+	}
 
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(stalk.vao);
-
-		if (!shader.isProgramValid()) {
-			printf("Program Not Valid!\n");
-			exit(1);
-		}
-		glDrawElements(stalk.type, stalk.numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
+	void drawOrange(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
+		//----------------Sphere-------------------
+		setShaders(shader, sphere);
+		pushMatrix(MODEL);
+		sphereTransformations();
+		drawMesh(sphere, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
+		//-----------------------------------------
+		
+		//----------------Stalk--------------------
+		setShaders(shader, stalk);
+		pushMatrix(MODEL);
+		stalkTransformations();
+		drawMesh(stalk, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		popMatrix(MODEL);
+		//-----------------------------------------
 	}
 };
 
