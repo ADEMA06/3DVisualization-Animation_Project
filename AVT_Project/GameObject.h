@@ -16,9 +16,9 @@ class GameObject {
     vec3 position = {0, 0, 0};
     vec3 rotation = {0, 0, 0};
     vec3 scaling = {1, 1, 1};
-    vec3 speed = {0, 0, 0};
+    float speed = 0;
     float rotAngle = 0;
-    vec3 accel = {0, 0, 0};
+    float dirAngle = 0;
  
 
 public:
@@ -27,15 +27,15 @@ public:
         this->position = position;
     }
  
-    GameObject(vec3 position, vec3 speed) {
+    GameObject(vec3 position, float speed) {
         this->position = position;
         this->speed = speed;
     }
 
-    GameObject(vec3 position, vec3 speed, float rotAngle) {
+    GameObject(vec3 position, float speed, float dirAngle) {
         this->position = position;
         this->speed = speed;
-        this->rotAngle = rotAngle;
+        this->dirAngle = dirAngle;
     }
 
     vec3 getPosition(){
@@ -62,20 +62,12 @@ public:
         this->scaling = scaling;
     }
 
-    vec3 getSpeed(){
+    float getSpeed(){
         return this->speed;
     }
 
-    void setSpeed(vec3 speed) {
+    void setSpeed(float speed) {
         this->speed = speed;
-    }
-
-    vec3 getAccel() {
-        return this->accel;
-    }
-
-    void setAccel(vec3 accel) {
-        this->accel = accel;
     }
 
     float getRotAngle() {
@@ -84,6 +76,14 @@ public:
 
     void setRotAngle(float rotAngle) {
         this->rotAngle = rotAngle;
+    }
+
+    float getDirAngle() {
+        return dirAngle;
+    }
+
+    void setDirAngle(float dirAngle) {
+        this->dirAngle = dirAngle;
     }
 
     MyMesh setMesh(MyMesh amesh, float amb[], float diff[], float spec[], float emissive[], float shininess, int texcount, vec3 position) {

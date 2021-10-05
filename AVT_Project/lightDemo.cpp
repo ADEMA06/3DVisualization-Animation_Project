@@ -31,11 +31,11 @@
 #include "Table.h"
 #include "Car.h"
 #include "Orange.h"
-#include "Cheerio.h"
 #include "Camera.h"
 #include "PerspectiveCamera.h"
 #include "OrthographicCamera.h"
 #include "Butter.h"
+#include "Road.h"
 
 using namespace std;
 
@@ -45,9 +45,11 @@ int WinX = 640, WinY = 480;
 
 unsigned int FrameCount = 0;
 
+bool keys[256] = { false };
+
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
-vec3 car_pos(0.0f, 0.0f, 0.0f);
+vec3 car_pos(1.0f, 0.0f, 1.0f);
 vec3 butter_pos(5.0f, 1.0f, 0.0f);
 vec4 car_color(1.0f, 1.0f, 1.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
@@ -57,9 +59,10 @@ vec4 butter_foil_color(0.0f, 0.0f, 0.9f, 1.0f);
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
-Car car(car_pos, 20.0f, car_color, color_tire);
+Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
 Butter butter(butter_pos, butter_foil_color);
-Orange orange(orange_pos, car_color, color_tire, 1.0f, { 15.0f, 0 , 6.0f });
+Orange orange(orange_pos, car_color, color_tire, 1.0f, 15.0f, 0);
+Road road(vec3(0.0f, 0.0f, 0.0f));
 std::vector<Cheerio> cheerios;
 
 
@@ -101,6 +104,7 @@ char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
 float oldTime = 0.0f;
+float dt = 0.0f;
 
 void timer(int value)
 {
@@ -130,6 +134,24 @@ void changeSize(int w, int h) {
 	}
 }
 
+void update() {
+	if(!(keys['q'] || keys['a'])) {
+		car.stop(dt);
+	}
+	if(keys['q']) {
+		car.goForward(dt);
+	} 
+	if(keys['a']) {
+		car.goBackwards(dt);
+	}
+	if (keys['o']) {
+		car.goLeft(dt);
+	}
+	if (keys['p']) {
+		car.goRight(dt);
+	}
+	
+}
 
 // ------------------------------------------------------------
 //
@@ -138,7 +160,6 @@ void changeSize(int w, int h) {
 
 void renderScene(void) {
 
-	float dt;
 	int t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
@@ -156,9 +177,12 @@ void renderScene(void) {
 	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
 		up = vec3(0, 0, 1);
 	}
-	cameras[2]->setPosition({ orange.getPosition().x - 5.0f, orange.getPosition().y + 5.0f, orange.getPosition().z });
+	float angle = car.getRotAngle() * M_PI / 180;
+	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
+	normalized_speed.y = -5;
+	cameras[2]->setPosition(car.getPosition() - normalized_speed);
 	if (current_camera == 2) {
-		cameras[2]->lookAtPoint({ orange.getPosition().x, orange.getPosition().y, orange.getPosition().z }, up);
+		cameras[2]->lookAtPoint({ car.getPosition().x, car.getPosition().y, car.getPosition().z }, up);
 	}
 	else {
 		cameras[0]->lookAtPoint({ 0, 0, 0 }, up);
@@ -179,11 +203,13 @@ void renderScene(void) {
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	for (int i = 0; i < cheerios.size(); i++) {
+	/*for (int i = 0; i < cheerios.size(); i++) {
 		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	}
+	}*/
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
+
+	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 
 	for (int i = 0; i < 3; ++i) {
 
@@ -220,6 +246,8 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+	update();
+	car.update(dt);
 
 	glutSwapBuffers();
 }
@@ -228,6 +256,11 @@ void renderScene(void) {
 //
 // Events from the Keyboard
 //
+
+
+void processReleaseKeys(unsigned char key, int xx, int yy) {
+	keys[key] = false;
+}
 
 void processKeys(unsigned char key, int xx, int yy)
 {
@@ -242,9 +275,17 @@ void processKeys(unsigned char key, int xx, int yy)
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+
+		// Camera keys
 		case '1': current_camera = 0; break;
 		case '2': current_camera = 1; break;
 		case '3': current_camera = 2; break;
+		
+		// Car movement keys
+		case 'q': keys['q'] = true; break;
+		case 'a': keys['a'] = true; break;
+		case 'o': keys['o'] = true; break;
+		case 'p': keys['p'] = true; break;
 	}
 }
 
@@ -398,6 +439,8 @@ void init()
 	float shininess= 100.0f;
 	int texcount = 0;
 
+	road.doNorthRoad(20);
+
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };
 	for (int i = 0; i < n_cherrios; i++) {
@@ -485,6 +528,7 @@ int main(int argc, char **argv) {
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
+	glutKeyboardUpFunc(processReleaseKeys);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc ( mouseWheel ) ;

@@ -1,12 +1,14 @@
 #ifndef __CAR_H__
 #define __CAR_H__
 
+#define _USE_MATH_DEFINES
 #include "GameObject.h"
 #include <sstream>
 #include <string>
 #include "geometry.h"
 #include "AVTmathLib.h"
 #include "VSShaderlib.h"
+#include <math.h>
 
 const float car_width = 1.0f;
 const float car_height = 0.5f;
@@ -19,19 +21,61 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 /// The normal matrix
 extern float mNormal3x3[9];
 
-class Car : GameObject {
+class Car : public GameObject {
     std::vector<struct MyMesh> tires;
     struct MyMesh body;
     float max_speed;
     vec4 body_color;
     vec4 tires_color;
+	float accel = 0;
+	float a = 0;
 
 public:
-    Car(vec3 position, float max_speed, vec4 body_color, vec4 tires_color) : GameObject(position) {
+    Car(vec3 position, float accel, float max_speed, vec4 body_color, vec4 tires_color) : GameObject(position) {
         this->max_speed = max_speed;
         this->body_color = body_color;
         this->tires_color = tires_color;
+		this->accel = accel;
     }
+
+	void goForward(float dt) {
+		setSpeed(getSpeed() + accel * dt);
+	}
+
+	void goBackwards(float dt) {
+		setSpeed(getSpeed() - accel * dt);
+	}
+
+	void goLeft(float dt) {
+		setRotAngle(getRotAngle() + 10.0f * dt);
+	}
+
+	void goRight(float dt) {
+		setRotAngle(getRotAngle() - 10.0f * dt);
+	}
+
+	void stop(float dt) {
+		if(getSpeed() > 0)
+			setSpeed(std::max(getSpeed() - accel*3 * dt, 0.0f));
+		else
+			setSpeed(std::min(getSpeed() + accel*3 * dt, 0.0f));
+	}
+
+	void update(float dt) {
+		float speed = getSpeed();
+		float angle = getRotAngle() * M_PI / 180;
+		vec3 position = getPosition();
+		vec3 speed_vector = vec3(speed * cos(angle) * dt, 0.0f, speed * sin(-angle) * dt);
+		setPosition(position + speed_vector);
+		int count = 0;
+		for (int i = -1; i <= 1; i += 2) {
+			for (int j = -1; j <= 1; j += 2) {
+				vec3 position = getPosition() + vec3(car_width / 2 * i + 0.25f * (-i), 0.0f, car_height / 2 * j);
+				tires.at(count).position = position;
+				count++;
+			}
+		}
+	}
 
 	void createCar() {
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -56,15 +100,18 @@ public:
 	}
 
 	void bodyTransformations() {
-		translate(MODEL, -car_width / 2, 0.25, -car_height / 2);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
+		rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
+		translate(MODEL, -car_width / 2, 0.25, -car_height / 2);
 		scale(MODEL, car_width, car_thickness, car_height);
 	}
 
 	void tireTransformations(int i) {
-		translate(MODEL, tires.at(i).position.x, tires.at(i).position.y + 0.25f, tires.at(i).position.z);
+		vec3 position = getPosition();
+		translate(MODEL, position.x, position.y,position.z);
+		rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
+		translate(MODEL, tires.at(i).position.x-position.x, tires.at(i).position.y + 0.25f - position.y, tires.at(i).position.z - position.z);
 		rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
-		scale(MODEL, 1.0f, 1.0f, 1.0f);
 	}
 
 	void drawCar(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
