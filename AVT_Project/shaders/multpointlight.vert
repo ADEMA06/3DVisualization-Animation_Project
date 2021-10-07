@@ -1,4 +1,16 @@
 #version 330
+/*float res[24];
+for (int i = 0; i < 24; i+=4) {
+	float mult[4];
+	float values[4] = { lightPos[i],lightPos[i + 1], lightPos[i + 2], lightPos[i + 3]};
+	multMatrixPoint(VIEW, values, mult);
+	res[i] = mult[0];
+	res[i+1] = mult[1];
+	res[i+2] = mult[2];
+	res[i+3] = mult[3];
+}
+//multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
+glUniform4fv(lPos_uniformId, 6, res);*/
 
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
