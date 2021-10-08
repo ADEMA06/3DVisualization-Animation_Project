@@ -101,7 +101,7 @@ float r = 10.0f;
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
 char s[32];
-float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
+float lightPos[24] = {0.0f, 5.0f, 0.0f, 1.0f,  5.0f, 5.0f, 5.0f, 1.0f ,   7.0f, 5.0f, 7.0f, 5.0f ,   -5.0f, 5.0f, -10.0f, 1.0f , -5.0f, 5.0f, 7.0f, 1.0f , 10.0f, 5.0f, 10.0f, 1.0f};
 
 float oldTime = 0.0f;
 float dt = 0.0f;
@@ -194,9 +194,18 @@ void renderScene(void) {
 
 		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
-		float res[4];
-		multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
-		glUniform4fv(lPos_uniformId, 1, res);
+		float res[24];
+		for (int i = 0; i < 24; i+=4) {
+			float mult[4];
+			float values[4] = { lightPos[i],lightPos[i + 1], lightPos[i + 2], lightPos[i + 3]};
+			multMatrixPoint(VIEW, values, mult);
+			res[i] = mult[0];
+			res[i+1] = mult[1];
+			res[i+2] = mult[2];
+			res[i+3] = mult[3];
+		}
+		//multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
+		glUniform4fv(lPos_uniformId, 6, res);
 
 	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
