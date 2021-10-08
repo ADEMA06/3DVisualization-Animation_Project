@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Candle.h" />
     <ClInclude Include="Car.h" />
     <ClInclude Include="Cheerio.h" />
     <ClInclude Include="GameObject.h" />

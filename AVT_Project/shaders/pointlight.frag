@@ -25,14 +25,20 @@ struct SpotLight {
 	float cutOff;
 };
 
-//in Light pointlights[6];
+struct pointLight{
+	vec4 position;
+	bool on;
+	vec3 lightDir;
+};
+
+in pointLight pointlights[6];
 in DirectionalLight dirlight;
 in SpotLight spotlights;
 
 in Data {
 	vec3 normal;
 	vec3 eye;
-	vec3 lightDir[6];
+	vec3 lightDir;
 } DataIn;
 
 
@@ -53,7 +59,9 @@ void main() {
 		if(dirIntensity > 0.0) {
 			vec3 h = normalize(dir_l + e);
 			float intSpec = max(dot(h,n), 0.0);
+			intSpec = 2;
 			spec += mat.specular * pow(intSpec, mat.shininess);
+
 			diffuse += mat.diffuse * dirIntensity;
 		}
 	}
@@ -69,5 +77,22 @@ void main() {
 		}
 	}
 
-	colorOut = max((dirIntensity+spotIntensity) * diffuse + spec, mat.ambient);
+
+	float pointIntensity = 0.0;
+	for(int i = 0; i < 6; i = i+1) {
+		float distance = sqrt(pow(pointlights[i].lightDir.x,2) + pow(pointlights[i].lightDir.y,2) + pow(pointlights[i].lightDir.z,2));
+		float attenuation = 1.0/(1.0 + 0.1*distance+ 0.01*distance*distance);
+		l = normalize(pointlights[i].lightDir);
+		pointIntensity += max(dot(n,l), 0.0) * attenuation;
+			
+		if (pointIntensity > 0.0) {
+			vec3 h = normalize(l + e);
+			float intSpec = max(dot(h,n), 0.0);
+			spec += mat.specular * pow(intSpec, mat.shininess)* attenuation;
+			diffuse += mat.diffuse * pointIntensity;
+		}
+	}
+
+	colorOut = diffuse + spec + mat.ambient;//max((dirIntensity+spotIntensity+pointIntensity) * diffuse + spec, mat.ambient);
+
 }

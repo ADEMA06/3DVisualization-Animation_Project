@@ -37,6 +37,7 @@
 #include "Butter.h"
 #include "Road.h"
 #include "Light.h"
+#include "Candle.h"
 
 using namespace std;
 
@@ -75,6 +76,8 @@ Orange orange(orange_pos, car_color, color_tire, 1.0f, 15.0f, 0);
 Road road(vec3(0.0f, 0.0f, 0.0f));
 std::vector<Cheerio> cheerios;
 
+vector<Candle> candles;
+
 
 int current_camera = 2;
 Camera* cameras[3];
@@ -99,7 +102,7 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 
 GLint dir_light_uniformId;
-	
+
 // Camera Position
 float camX, camY, camZ;
 
@@ -111,9 +114,9 @@ float alpha = 39.0f, beta = 51.0f;
 float r = 10.0f;
 
 // Frame counting and FPS computation
-long myTime,timebase = 0,frame = 0;
+long myTime, timebase = 0, frame = 0;
 char s[32];
-float lightPos[24] = {0.0f, 5.0f, 0.0f, 1.0f,  5.0f, 5.0f, 5.0f, 1.0f ,   7.0f, 5.0f, 7.0f, 5.0f ,   -5.0f, 5.0f, -10.0f, 1.0f , -5.0f, 5.0f, 7.0f, 1.0f , 10.0f, 5.0f, 10.0f, 1.0f};
+float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 
 float oldTime = 0.0f;
 float dt = 0.0f;
@@ -130,8 +133,8 @@ void timer(int value)
 	std::string s = oss.str();
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
-    FrameCount = 0;
-    glutTimerFunc(1000, timer, 0);
+	FrameCount = 0;
+	glutTimerFunc(1000, timer, 0);
 }
 
 void refresh(int value)
@@ -152,13 +155,13 @@ void changeSize(int w, int h) {
 }
 
 void update() {
-	if(!(keys['q'] || keys['a'])) {
+	if (!(keys['q'] || keys['a'])) {
 		car.stop(dt);
 	}
-	if(keys['q']) {
+	if (keys['q']) {
 		car.goForward(dt);
-	} 
-	if(keys['a']) {
+	}
+	if (keys['a']) {
 		car.goBackwards(dt);
 	}
 	if (keys['o']) {
@@ -167,7 +170,7 @@ void update() {
 	if (keys['p']) {
 		car.goRight(dt);
 	}
-	
+
 }
 
 // ------------------------------------------------------------
@@ -177,6 +180,7 @@ void update() {
 
 void renderScene(void) {
 
+	printf("%d\n", directionalLight.on);
 	int t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
@@ -212,22 +216,10 @@ void renderScene(void) {
 		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
 	float res[4];
-	multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
-		float res[24];
-		for (int i = 0; i < 24; i+=4) {
-			float mult[4];
-			float values[4] = { lightPos[i],lightPos[i + 1], lightPos[i + 2], lightPos[i + 3]};
-			multMatrixPoint(VIEW, values, mult);
-			res[i] = mult[0];
-			res[i+1] = mult[1];
-			res[i+2] = mult[2];
-			res[i+3] = mult[3];
-		}
-		//multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
-		glUniform4fv(lPos_uniformId, 6, res);
 
-	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
@@ -244,6 +236,10 @@ void renderScene(void) {
 	butter2.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter3.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 
+	for (int i = 0; i < candles.size(); i++) {
+		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	}
+
 	//--------------Lights--------------------------------
 	float dirlight_direction[4] = { 0.0f, -1.0f, 0.0f, 0.0f };
 	multMatrixPoint(VIEW, dirlight_direction, res);
@@ -251,6 +247,19 @@ void renderScene(void) {
 	glUniform4fv(loc, 1, res);
 	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.on");
 	glUniform1i(loc, directionalLight.on);
+
+	int count = 0;
+	for (int i = 0; i < candles.size(); i++) {
+		float mult[4];
+		vec4 light_pos = candles.at(i).getPointLight().position;
+		float values[4] = { light_pos.x, light_pos.y, light_pos.z, light_pos.w };
+		multMatrixPoint(VIEW, values, mult);
+		string location = "uni_pointlights[" + to_string(i) + "].position";
+		loc = glGetUniformLocation(shader.getProgramIndex(), location.c_str());
+		glUniform4fv(loc, 1, mult);
+	}
+	
+
 	//----------------------------------------------------
 
 
@@ -267,7 +276,7 @@ void renderScene(void) {
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
-		translate(MODEL, myMeshes[objId].position.x,  myMeshes[objId].position.y,  myMeshes[objId].position.z);
+		translate(MODEL, myMeshes[objId].position.x, myMeshes[objId].position.y, myMeshes[objId].position.z);
 		rotate(MODEL, myMeshes[objId].rotAngle, myMeshes[objId].rotation.x, myMeshes[objId].rotation.y, myMeshes[objId].rotation.z);
 
 		// send matrices to OGL
@@ -279,10 +288,10 @@ void renderScene(void) {
 
 		// Render mesh
 		glBindVertexArray(myMeshes[objId].vao);
-			
+
 		if (!shader.isProgramValid()) {
 			printf("Program Not Valid!\n");
-			exit(1);	
+			exit(1);
 		}
 		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
@@ -307,28 +316,28 @@ void processReleaseKeys(unsigned char key, int xx, int yy) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
-	switch(key) {
+	switch (key) {
 
-		case 27:
-			glutLeaveMainLoop();
-			break;
+	case 27:
+		glutLeaveMainLoop();
+		break;
 
-		case 'c': 
-			printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
-			break;
-		case 'm': glEnable(GL_MULTISAMPLE); break;
-		case 'n': directionalLight.on = !directionalLight.on; break;
+	case 'c':
+		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
+		break;
+	case 'm': glEnable(GL_MULTISAMPLE); break;
+	case 'n': directionalLight.on = !directionalLight.on; break;
 
 		// Camera keys
-		case '1': current_camera = 0; break;
-		case '2': current_camera = 1; break;
-		case '3': current_camera = 2; break;
-		
+	case '1': current_camera = 0; break;
+	case '2': current_camera = 1; break;
+	case '3': current_camera = 2; break;
+
 		// Car movement keys
-		case 'q': keys['q'] = true; break;
-		case 'a': keys['a'] = true; break;
-		case 'o': keys['o'] = true; break;
-		case 'p': keys['p'] = true; break;
+	case 'q': keys['q'] = true; break;
+	case 'a': keys['a'] = true; break;
+	case 'o': keys['o'] = true; break;
+	case 'p': keys['p'] = true; break;
 	}
 }
 
@@ -341,7 +350,7 @@ void processKeys(unsigned char key, int xx, int yy)
 void processMouseButtons(int button, int state, int xx, int yy)
 {
 	// start tracking the mouse
-	if (state == GLUT_DOWN)  {
+	if (state == GLUT_DOWN) {
 		startX = xx;
 		startY = yy;
 		if (button == GLUT_LEFT_BUTTON)
@@ -374,8 +383,8 @@ void processMouseMotion(int xx, int yy)
 	float alphaAux, betaAux;
 	float rAux;
 
-	deltaX =  - xx + startX;
-	deltaY =    yy - startY;
+	deltaX = -xx + startX;
+	deltaY = yy - startY;
 
 	// left mouse button: move camera
 	if (tracking == 1) {
@@ -402,11 +411,11 @@ void processMouseMotion(int xx, int yy)
 
 	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux *   						       sin(betaAux * 3.14f / 180.0f);
+	camY = rAux * sin(betaAux * 3.14f / 180.0f);
 
 	cameras[current_camera]->setPosition({ camX, camY, camZ });
-//  uncomment this if not using an idle or refresh func
-//	glutPostRedisplay();
+	//  uncomment this if not using an idle or refresh func
+	//	glutPostRedisplay();
 }
 
 
@@ -418,10 +427,10 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
+	camY = r * sin(beta * 3.14f / 180.0f);
 
-//  uncomment this if not using an idle or refresh func
-//	glutPostRedisplay();
+	//  uncomment this if not using an idle or refresh func
+	//	glutPostRedisplay();
 }
 
 // --------------------------------------------------------
@@ -438,7 +447,7 @@ GLuint setupShaders() {
 	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight.frag");
 
 	// set semantics for the shader variables
-	glBindFragDataLocation(shader.getProgramIndex(), 0,"colorOut");
+	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
 	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
@@ -452,7 +461,7 @@ GLuint setupShaders() {
 
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
-	
+
 	return(shader.isProgramLinked());
 }
 
@@ -476,11 +485,11 @@ void init()
 {
 	srand(time(0));
 
-	float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
-	float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
-	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
-	float shininess= 100.0f;
+	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+	float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+	float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
 	int texcount = 0;
 
 	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
@@ -503,7 +512,29 @@ void init()
 		cheerio.createCheerio();
 		cheerios.push_back(cheerio);
 	}
-	
+
+	Candle candle1(vec3(50, 0, 0), butter_foil_color);
+	Candle candle2(vec3(0, 0, 50), butter_foil_color);
+	Candle candle3(vec3(-50, 0, 0), butter_foil_color);
+	Candle candle4(vec3(0, 0, -50), butter_foil_color);
+	Candle candle5(vec3(50, 0, 50), butter_foil_color);
+	Candle candle6(vec3(-50, 0, -50), butter_foil_color);
+
+	candle1.createCandle();
+	candle2.createCandle();
+	candle3.createCandle();
+	candle4.createCandle();
+	candle5.createCandle();
+	candle6.createCandle();
+
+	candles.push_back(candle1);
+	candles.push_back(candle2);
+	candles.push_back(candle3);
+	candles.push_back(candle4);
+	candles.push_back(candle5);
+	candles.push_back(candle6);
+
+
 	table.createTable();
 	car.createCar();
 	orange.createOrange();
@@ -511,6 +542,8 @@ void init()
 	butter1.createButter();
 	butter2.createButter();
 	butter3.createButter();
+
+	
 
 	MyMesh amesh;
 	float height = 10.0f;
@@ -550,7 +583,7 @@ void init()
 //
 
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
 
 	//	Camera initialization	
@@ -562,47 +595,47 @@ int main(int argc, char **argv) {
 	cameras[1] = &camera2;
 	cameras[2] = &camera3;
 
-//  GLUT initialization
+	//  GLUT initialization
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
 
-	glutInitContextVersion (3, 3);
-	glutInitContextProfile (GLUT_CORE_PROFILE );
+	glutInitContextVersion(3, 3);
+	glutInitContextProfile(GLUT_CORE_PROFILE);
 	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
 
-	glutInitWindowPosition(100,100);
+	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(WinX, WinY);
 	WindowHandle = glutCreateWindow(CAPTION);
 
 
-//  Callback Registration
+	//  Callback Registration
 	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
 
 	glutTimerFunc(0, timer, 0);
 	//glutIdleFunc(renderScene);  // Use it for maximum performance
-	glutTimerFunc(1000/60, refresh, 0);    //use it to to get 60 FPS whatever
+	glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
 	glutKeyboardUpFunc(processReleaseKeys);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
-	glutMouseWheelFunc ( mouseWheel ) ;
-	
+	glutMouseWheelFunc(mouseWheel);
 
 
-//	return from main loop
+
+	//	return from main loop
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
-//	Init GLEW
+	//	Init GLEW
 	glewExperimental = GL_TRUE;
 	glewInit();
 
-	printf ("Vendor: %s\n", glGetString (GL_VENDOR));
-	printf ("Renderer: %s\n", glGetString (GL_RENDERER));
-	printf ("Version: %s\n", glGetString (GL_VERSION));
-	printf ("GLSL: %s\n", glGetString (GL_SHADING_LANGUAGE_VERSION));
+	printf("Vendor: %s\n", glGetString(GL_VENDOR));
+	printf("Renderer: %s\n", glGetString(GL_RENDERER));
+	printf("Version: %s\n", glGetString(GL_VERSION));
+	printf("GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 	if (!setupShaders())
 		return(1);
@@ -615,4 +648,3 @@ int main(int argc, char **argv) {
 	return(0);
 
 }
-

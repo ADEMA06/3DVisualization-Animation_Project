@@ -22,11 +22,17 @@ struct SpotLight {
 	float cutOff;
 };
 
-//uniform Light uni_pointlights[6];
+struct pointLight{
+	vec4 position;
+	bool on;
+	vec3 lightDir;
+};
+
+uniform pointLight uni_pointlights[6];
 uniform DirectionalLight uni_dirlight;
 uniform SpotLight uni_spotlights;
 
-//out Light pointlights[6];
+out pointLight pointlights[6];
 out DirectionalLight dirlight;
 out SpotLight spotlights;
 
@@ -35,7 +41,7 @@ out SpotLight spotlights;
 out Data {
 	vec3 normal;
 	vec3 eye;
-	vec3 lightDir[6];
+	vec3 lightDir;
 } DataOut;
 
 void main () {
@@ -53,6 +59,10 @@ void main () {
 	spotlights.position = uni_spotlights.position;
 	spotlights.on = uni_spotlights.on;
 	spotlights.cutOff = uni_spotlights.cutOff;
+
+	for(int i = 0; i < 6; i++) {
+		pointlights[i].lightDir = vec3(uni_pointlights[i].position - pos);
+	}
 
 	gl_Position = m_pvm * position;	
 }
