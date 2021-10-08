@@ -4,10 +4,33 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
-uniform vec4 l_pos[6];
 
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria
+
+uniform vec4 spot_dir;
+
+struct DirectionalLight {
+	vec4 direction;
+	bool on;
+};
+
+struct SpotLight {
+	vec4 position;
+	vec4 direction;
+	bool on;
+	float cutOff;
+};
+
+//uniform Light uni_pointlights[6];
+uniform DirectionalLight uni_dirlight;
+uniform SpotLight uni_spotlights;
+
+//out Light pointlights[6];
+out DirectionalLight dirlight;
+out SpotLight spotlights;
+
+
 
 out Data {
 	vec3 normal;
@@ -20,11 +43,16 @@ void main () {
 	vec4 pos = m_viewModel * position;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
-	for(int i = 0; i < 6; i++) {
-		DataOut.lightDir[i] = vec3(l_pos[i] - pos);
-	}
-
+	DataOut.lightDir = vec3(uni_spotlights.position - pos);
 	DataOut.eye = vec3(-pos);
+
+	dirlight.direction = -uni_dirlight.direction;
+	dirlight.on = uni_dirlight.on;
+
+	spotlights.direction = -uni_spotlights.direction;
+	spotlights.position = uni_spotlights.position;
+	spotlights.on = uni_spotlights.on;
+	spotlights.cutOff = uni_spotlights.cutOff;
 
 	gl_Position = m_pvm * position;	
 }

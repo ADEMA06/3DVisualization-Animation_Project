@@ -42,7 +42,7 @@ public:
 		float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-		float shininess = 100.0f;
+		float shininess = 500.0f;
 		int texcount = 0;
 		vec3 table_pos = getPosition();
 		printf("table: %f %f %f\n", table_pos.x, table_pos.y, table_pos.z);

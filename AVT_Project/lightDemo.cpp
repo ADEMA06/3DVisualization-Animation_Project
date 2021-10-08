@@ -36,6 +36,7 @@
 #include "OrthographicCamera.h"
 #include "Butter.h"
 #include "Road.h"
+#include "Light.h"
 
 using namespace std;
 
@@ -50,13 +51,22 @@ bool keys[256] = { false };
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
 vec3 car_pos(1.0f, 0.0f, 1.0f);
-vec3 butter_pos(5.0f, 1.0f, 0.0f);
+vec3 butter_pos(5.0f, 0.5f, 0.0f);
 vec4 car_color(1.0f, 1.0f, 1.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
 vec4 cheerio_color(1.0f, 0.874f, 0.0f, 1.0f);
 vec4 butter_foil_color(0.0f, 0.0f, 0.9f, 1.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
+
+//-----------------------------------------
+vec3 butter_pos1(5.0f, 0.0f, 0.0f);
+vec3 butter_pos2(5.0f, 0.0f, 0.5f);
+vec3 butter_pos3(5.0f, 0.5f, 0.5f);
+Butter butter1(butter_pos1, butter_foil_color);
+Butter butter2(butter_pos2, butter_foil_color);
+Butter butter3(butter_pos3, butter_foil_color);
+//-----------------------------------------
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
@@ -87,6 +97,8 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
+
+GLint dir_light_uniformId;
 	
 // Camera Position
 float camX, camY, camZ;
@@ -105,6 +117,11 @@ float lightPos[24] = {0.0f, 5.0f, 0.0f, 1.0f,  5.0f, 5.0f, 5.0f, 1.0f ,   7.0f, 
 
 float oldTime = 0.0f;
 float dt = 0.0f;
+
+//----------------Lights---------------------
+Light directionalLight;
+//-------------------------------------------
+
 
 void timer(int value)
 {
@@ -194,6 +211,9 @@ void renderScene(void) {
 
 		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
+	float res[4];
+	multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
 		float res[24];
 		for (int i = 0; i < 24; i+=4) {
 			float mult[4];
@@ -212,13 +232,28 @@ void renderScene(void) {
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	/*for (int i = 0; i < cheerios.size(); i++) {
+	for (int i = 0; i < cheerios.size(); i++) {
 		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	}*/
+	}
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
-
+	car.update(dt);
 	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+
+	butter1.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	butter2.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	butter3.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+
+	//--------------Lights--------------------------------
+	float dirlight_direction[4] = { 0.0f, -1.0f, 0.0f, 0.0f };
+	multMatrixPoint(VIEW, dirlight_direction, res);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.direction");
+	glUniform4fv(loc, 1, res);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.on");
+	glUniform1i(loc, directionalLight.on);
+	//----------------------------------------------------
+
+
 
 	for (int i = 0; i < 3; ++i) {
 
@@ -256,7 +291,6 @@ void renderScene(void) {
 		objId++;
 	}
 	update();
-	car.update(dt);
 
 	glutSwapBuffers();
 }
@@ -283,7 +317,7 @@ void processKeys(unsigned char key, int xx, int yy)
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
-		case 'n': glDisable(GL_MULTISAMPLE); break;
+		case 'n': directionalLight.on = !directionalLight.on; break;
 
 		// Camera keys
 		case '1': current_camera = 0; break;
@@ -415,7 +449,8 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
-	
+
+
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	
 	return(shader.isProgramLinked());
@@ -448,7 +483,16 @@ void init()
 	float shininess= 100.0f;
 	int texcount = 0;
 
+	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	directionalLight.on = true;
+
+
+
 	road.doNorthRoad(20);
+	road.doEastCurve();
+	road.doEastRoad(20);
+	road.doNorthCurve();
+	road.doNorthRoad(30);
 
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };
@@ -464,6 +508,10 @@ void init()
 	car.createCar();
 	orange.createOrange();
 	butter.createButter();
+	butter1.createButter();
+	butter2.createButter();
+	butter3.createButter();
+
 	MyMesh amesh;
 	float height = 10.0f;
 	amesh = createCylinder(height, 0.05f, 10);
@@ -506,7 +554,7 @@ int main(int argc, char **argv) {
 
 
 	//	Camera initialization	
-	OrtographicCamera camera1({ 15.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, false, 0.1f, 1000.0f, 100.0f, 100.0f, 100.0f, 100.0f);
+	OrtographicCamera camera1({ 15.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, false, 0.1f, 1000.0f, 100.0f, -100.0f, 100.0f, -100.0f);
 	PerspectiveCamera camera2({ 0.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.1f, 1000.0f, 53.13f);
 	PerspectiveCamera camera3({ orange.getPosition().x - 5.0f, orange.getPosition().y + 5.0f, orange.getPosition().z }, { orange.getPosition().x, orange.getPosition().y, orange.getPosition().z }, false, 0.1f, 1000.0f, 53.13f);
 
