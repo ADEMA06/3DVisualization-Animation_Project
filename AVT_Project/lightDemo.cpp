@@ -49,6 +49,10 @@ unsigned int FrameCount = 0;
 
 bool keys[256] = { false };
 
+float pointLights_on = 1.0;
+
+float camera_angle_xz = 0.0f;
+
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
 vec3 car_pos(1.0f, 0.0f, 1.0f);
@@ -149,9 +153,9 @@ void refresh(int value)
 //
 
 void changeSize(int w, int h) {
-	for (int i = 0; i < 2; i++) {
-		cameras[i]->setViewPort(w, h);
-	}
+	cameras[current_camera]->setViewPort(w, h);
+	WinX = w;
+	WinY = h;
 }
 
 void update() {
@@ -179,8 +183,6 @@ void update() {
 //
 
 void renderScene(void) {
-
-	printf("%d\n", directionalLight.on);
 	int t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
@@ -200,13 +202,15 @@ void renderScene(void) {
 	}
 	float angle = car.getRotAngle() * M_PI / 180;
 	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
-	normalized_speed.y = -5;
+	normalized_speed.y = -2;
 	cameras[2]->setPosition(car.getPosition() - normalized_speed);
+	float radius = sqrt(pow(car.getPosition().x - cameras[2]->getPosition().x, 2) + pow(car.getPosition().z - cameras[2]->getPosition().z, 2));
 	if (current_camera == 2) {
-		cameras[2]->lookAtPoint({ car.getPosition().x, car.getPosition().y, car.getPosition().z }, up);
+		cameras[2]->lookAtPoint({ cameras[2]->getPosition().x + radius*cos(camera_angle_xz), car.getPosition().y, cameras[2]->getPosition().z + radius * sin(-camera_angle_xz)}, up);
+		printf("lookat: %f  %f\n", cameras[2]->getPosition().x + (car.getPosition().x - cameras[2]->getPosition().x) * cos(camera_angle_xz), cameras[2]->getPosition().z + (car.getPosition().x - cameras[2]->getPosition().x) * sin(-camera_angle_xz));
 	}
 	else {
-		cameras[0]->lookAtPoint({ 0, 0, 0 }, up);
+		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
 	}
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
@@ -257,6 +261,10 @@ void renderScene(void) {
 		string location = "uni_pointlights[" + to_string(i) + "].position";
 		loc = glGetUniformLocation(shader.getProgramIndex(), location.c_str());
 		glUniform4fv(loc, 1, mult);
+
+		string location_on = "uni_pointlights[" + to_string(i) + "].on";
+		loc = glGetUniformLocation(shader.getProgramIndex(), location_on.c_str());
+		glUniform1f(loc, pointLights_on);
 	}
 	
 
@@ -322,16 +330,16 @@ void processKeys(unsigned char key, int xx, int yy)
 		glutLeaveMainLoop();
 		break;
 
-	case 'c':
-		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
-		break;
+	case 'c': 
+		 pointLights_on = pointLights_on*-1.0 + 1.0;
+			break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'n': directionalLight.on = !directionalLight.on; break;
 
 		// Camera keys
-	case '1': current_camera = 0; break;
-	case '2': current_camera = 1; break;
-	case '3': current_camera = 2; break;
+	case '1': current_camera = 0; cameras[current_camera]->setViewPort(WinX, WinY); break;
+	case '2': current_camera = 1; cameras[current_camera]->setViewPort(WinX, WinY); break;
+	case '3': current_camera = 2; cameras[current_camera]->setViewPort(WinX, WinY); break;
 
 		// Car movement keys
 	case 'q': keys['q'] = true; break;
@@ -353,8 +361,8 @@ void processMouseButtons(int button, int state, int xx, int yy)
 	if (state == GLUT_DOWN) {
 		startX = xx;
 		startY = yy;
-		if (button == GLUT_LEFT_BUTTON)
-			tracking = 1;
+		if (button == GLUT_LEFT_BUTTON) { tracking = 1; camera_angle_xz += 0.1f; }
+			
 		else if (button == GLUT_RIGHT_BUTTON)
 			tracking = 2;
 	}
@@ -388,16 +396,16 @@ void processMouseMotion(int xx, int yy)
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-
-
-		alphaAux = alpha + deltaX;
+		printf("%d\n", deltaX);
+		camera_angle_xz = (float)(deltaX * (M_PI / 180.0f));
+		/*alphaAux = alpha + deltaX;
 		betaAux = beta + deltaY;
 
 		if (betaAux > 85.0f)
 			betaAux = 85.0f;
 		else if (betaAux < -85.0f)
 			betaAux = -85.0f;
-		rAux = r;
+		rAux = r;*/
 	}
 	// right mouse button: zoom
 	else if (tracking == 2) {
@@ -409,13 +417,13 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	/*camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camY = rAux * sin(betaAux * 3.14f / 180.0f);
 
 	cameras[current_camera]->setPosition({ camX, camY, camZ });
 	//  uncomment this if not using an idle or refresh func
-	//	glutPostRedisplay();
+	//	glutPostRedisplay();*/
 }
 
 
@@ -587,9 +595,9 @@ int main(int argc, char** argv) {
 
 
 	//	Camera initialization	
-	OrtographicCamera camera1({ 15.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, false, 0.1f, 1000.0f, 100.0f, -100.0f, 100.0f, -100.0f);
-	PerspectiveCamera camera2({ 0.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.1f, 1000.0f, 53.13f);
-	PerspectiveCamera camera3({ orange.getPosition().x - 5.0f, orange.getPosition().y + 5.0f, orange.getPosition().z }, { orange.getPosition().x, orange.getPosition().y, orange.getPosition().z }, false, 0.1f, 1000.0f, 53.13f);
+	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f*WinY/WinX, -55.0f*WinY / WinX);
+	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
+	PerspectiveCamera camera3({0,0,0}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
 
 	cameras[0] = &camera1;
 	cameras[1] = &camera2;

@@ -24,7 +24,7 @@ struct SpotLight {
 
 struct pointLight{
 	vec4 position;
-	bool on;
+	float on;
 	vec3 lightDir;
 };
 
@@ -62,6 +62,7 @@ void main () {
 
 	for(int i = 0; i < 6; i++) {
 		pointlights[i].lightDir = vec3(uni_pointlights[i].position - pos);
+		pointlights[i].on = uni_pointlights[i].on;
 	}
 
 	gl_Position = m_pvm * position;	
