@@ -115,7 +115,7 @@ int startX, startY, tracking = 0;
 
 // Camera Spherical Coordinates
 float alpha = 39.0f, beta = 51.0f;
-float r = 10.0f;
+float r = 5.0f;
 
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
@@ -124,6 +124,8 @@ float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 
 float oldTime = 0.0f;
 float dt = 0.0f;
+
+bool leftKey = false;
 
 //----------------Lights---------------------
 Light directionalLight;
@@ -159,19 +161,19 @@ void changeSize(int w, int h) {
 }
 
 void update() {
-	if (!(keys['q'] || keys['a'])) {
+	if (!(keys['w'] || keys['s'])) {
 		car.stop(dt);
 	}
-	if (keys['q']) {
+	if (keys['w']) {
 		car.goForward(dt);
 	}
-	if (keys['a']) {
+	if (keys['s']) {
 		car.goBackwards(dt);
 	}
-	if (keys['o']) {
+	if (keys['a']) {
 		car.goLeft(dt);
 	}
-	if (keys['p']) {
+	if (keys['d']) {
 		car.goRight(dt);
 	}
 
@@ -203,11 +205,14 @@ void renderScene(void) {
 	float angle = car.getRotAngle() * M_PI / 180;
 	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
 	normalized_speed.y = -2;
-	cameras[2]->setPosition(car.getPosition() - normalized_speed);
+	if(!leftKey)
+		cameras[2]->setFinalPosition(car.getPosition() - normalized_speed);
+	else {
+		cameras[2]->setFinalPosition(car.getPosition() + cameras[2]->getSphericCoords());
+	}
 	float radius = sqrt(pow(car.getPosition().x - cameras[2]->getPosition().x, 2) + pow(car.getPosition().z - cameras[2]->getPosition().z, 2));
 	if (current_camera == 2) {
-		cameras[2]->lookAtPoint({ cameras[2]->getPosition().x + radius*cos(camera_angle_xz), car.getPosition().y, cameras[2]->getPosition().z + radius * sin(-camera_angle_xz)}, up);
-		printf("lookat: %f  %f\n", cameras[2]->getPosition().x + (car.getPosition().x - cameras[2]->getPosition().x) * cos(camera_angle_xz), cameras[2]->getPosition().z + (car.getPosition().x - cameras[2]->getPosition().x) * sin(-camera_angle_xz));
+		cameras[2]->lookAtPoint(car.getPosition() ,up);
 	}
 	else {
 		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
@@ -342,10 +347,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case '3': current_camera = 2; cameras[current_camera]->setViewPort(WinX, WinY); break;
 
 		// Car movement keys
-	case 'q': keys['q'] = true; break;
+	case 'w': keys['w'] = true; break;
+	case 's': keys['s'] = true; break;
 	case 'a': keys['a'] = true; break;
-	case 'o': keys['o'] = true; break;
-	case 'p': keys['p'] = true; break;
+	case 'd': keys['d'] = true; break;
 	}
 }
 
@@ -361,14 +366,16 @@ void processMouseButtons(int button, int state, int xx, int yy)
 	if (state == GLUT_DOWN) {
 		startX = xx;
 		startY = yy;
-		if (button == GLUT_LEFT_BUTTON) { tracking = 1; camera_angle_xz += 0.1f; }
+		if (button == GLUT_LEFT_BUTTON) { tracking = 1; leftKey = true; }
 			
 		else if (button == GLUT_RIGHT_BUTTON)
 			tracking = 2;
+
 	}
 
 	//stop tracking the mouse
 	else if (state == GLUT_UP) {
+		leftKey = false;
 		if (tracking == 1) {
 			alpha -= (xx - startX);
 			beta += (yy - startY);
@@ -396,16 +403,15 @@ void processMouseMotion(int xx, int yy)
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-		printf("%d\n", deltaX);
-		camera_angle_xz = (float)(deltaX * (M_PI / 180.0f));
-		/*alphaAux = alpha + deltaX;
+	
+		alphaAux = alpha + deltaX;
 		betaAux = beta + deltaY;
 
 		if (betaAux > 85.0f)
 			betaAux = 85.0f;
 		else if (betaAux < -85.0f)
 			betaAux = -85.0f;
-		rAux = r;*/
+		rAux = r;
 	}
 	// right mouse button: zoom
 	else if (tracking == 2) {
@@ -417,11 +423,11 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	/*camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camY = rAux * sin(betaAux * 3.14f / 180.0f);
 
-	cameras[current_camera]->setPosition({ camX, camY, camZ });
+	cameras[2]->setSphericCoords({ camX, camY, camZ });
 	//  uncomment this if not using an idle or refresh func
 	//	glutPostRedisplay();*/
 }
@@ -621,8 +627,8 @@ int main(int argc, char** argv) {
 	glutReshapeFunc(changeSize);
 
 	glutTimerFunc(0, timer, 0);
-	//glutIdleFunc(renderScene);  // Use it for maximum performance
-	glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
+	glutIdleFunc(renderScene);  // Use it for maximum performance
+	//glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
