@@ -51,7 +51,7 @@ bool keys[256] = { false };
 
 float pointLights_on = 1.0;
 
-float camera_angle_xz = 0.0f;
+float camera_angle_xz = M_PI;
 
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
@@ -115,7 +115,7 @@ int startX, startY, tracking = 0;
 
 // Camera Spherical Coordinates
 float alpha = 39.0f, beta = 51.0f;
-float r = 10.0f;
+float r = 5.0f;
 
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
@@ -124,11 +124,14 @@ float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 
 float oldTime = 0.0f;
 float dt = 0.0f;
-
+int direction = 0;
 //----------------Lights---------------------
 Light directionalLight;
 //-------------------------------------------
 
+bool mouse_pressed = false;
+vec3 oldPosition = vec3(0.0f,0.0f,0.0f);
+vec3 currentPosition;
 
 void timer(int value)
 {
@@ -144,7 +147,7 @@ void timer(int value)
 void refresh(int value)
 {
 	glutPostRedisplay();
-	glutTimerFunc(1000 / 60, refresh, 0);
+	glutTimerFunc(0, refresh, 0);
 }
 
 // ------------------------------------------------------------
@@ -170,81 +173,44 @@ void update() {
 	}
 	if (keys['o']) {
 		car.goLeft(dt);
+		direction = -1;
 	}
 	if (keys['p']) {
 		car.goRight(dt);
+		direction = 1;
 	}
 
 }
 
-// ------------------------------------------------------------
-//
-// Render stufff
-//
-
-void renderScene(void) {
-	int t = glutGet(GLUT_ELAPSED_TIME);
-	dt = (t - oldTime) / 1000;
-	oldTime = t;
-
-	GLint loc;
-
-	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// load identity matrices
-	loadIdentity(VIEW);
-	loadIdentity(MODEL);
-	// set the camera using a function similar to gluLookAt
+void setCameraTarget() {
 	vec3 up(0, 1, 0);
 	vec3 cameraPos = cameras[current_camera]->getPosition();
 	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
 		up = vec3(0, 0, 1);
 	}
-	float angle = car.getRotAngle() * M_PI / 180;
-	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
-	normalized_speed.y = -2;
-	cameras[2]->setPosition(car.getPosition() - normalized_speed);
-	float radius = sqrt(pow(car.getPosition().x - cameras[2]->getPosition().x, 2) + pow(car.getPosition().z - cameras[2]->getPosition().z, 2));
-	if (current_camera == 2) {
-		cameras[2]->lookAtPoint({ cameras[2]->getPosition().x + radius*cos(camera_angle_xz), car.getPosition().y, cameras[2]->getPosition().z + radius * sin(-camera_angle_xz)}, up);
-		printf("lookat: %f  %f\n", cameras[2]->getPosition().x + (car.getPosition().x - cameras[2]->getPosition().x) * cos(camera_angle_xz), cameras[2]->getPosition().z + (car.getPosition().x - cameras[2]->getPosition().x) * sin(-camera_angle_xz));
-	}
-	else {
+
+	if (current_camera != 2) {
 		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
 	}
-	// use our shader
-	glUseProgram(shader.getProgramIndex());
+}
 
-	//send the light position in eye coordinates
-
-		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
-
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
-
+void drawObjects() {
+	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	for (int i = 0; i < cheerios.size(); i++) {
-		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	}
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
-	car.update(dt);
 	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-
-	butter1.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	butter2.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	butter3.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
+	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
+	car.update(dt);
+}
 
-	//--------------Lights--------------------------------
+void setLights() {
+	GLint loc;
+	float res[4];
 	float dirlight_direction[4] = { 0.0f, -1.0f, 0.0f, 0.0f };
 	multMatrixPoint(VIEW, dirlight_direction, res);
 	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.direction");
@@ -266,12 +232,38 @@ void renderScene(void) {
 		loc = glGetUniformLocation(shader.getProgramIndex(), location_on.c_str());
 		glUniform1f(loc, pointLights_on);
 	}
-	
+}
 
-	//----------------------------------------------------
+// ------------------------------------------------------------
+//
+// Render stufff
+//
 
+void renderScene(void) {
+	int t = glutGet(GLUT_ELAPSED_TIME);
+	dt = (t - oldTime) / 1000;
+	oldTime = t;
 
+	GLint loc;
 
+	FrameCount++;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// load identity matrices
+	loadIdentity(VIEW);
+	loadIdentity(MODEL);
+	// set the camera using a function similar to gluLookAt
+	// use our shader
+	glUseProgram(shader.getProgramIndex());
+	setCameraTarget();
+
+	float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   
+	glUniform4fv(lPos_uniformId, 1, res);
+
+	int objId = 0;
+	drawObjects();
+	setLights();
+	update();
 	for (int i = 0; i < 3; ++i) {
 
 		// send the material
@@ -307,7 +299,6 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
-	update();
 
 	glutSwapBuffers();
 }
@@ -359,6 +350,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 {
 	// start tracking the mouse
 	if (state == GLUT_DOWN) {
+		mouse_pressed = true;
 		startX = xx;
 		startY = yy;
 		if (button == GLUT_LEFT_BUTTON) { tracking = 1; camera_angle_xz += 0.1f; }
@@ -369,6 +361,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 
 	//stop tracking the mouse
 	else if (state == GLUT_UP) {
+		mouse_pressed = false;
 		if (tracking == 1) {
 			alpha -= (xx - startX);
 			beta += (yy - startY);
@@ -396,16 +389,15 @@ void processMouseMotion(int xx, int yy)
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-		printf("%d\n", deltaX);
-		camera_angle_xz = (float)(deltaX * (M_PI / 180.0f));
-		/*alphaAux = alpha + deltaX;
+		//camera_angle_xz = (float)(deltaX * (M_PI / 180.0f));
+		alphaAux = alpha + deltaX;
 		betaAux = beta + deltaY;
 
 		if (betaAux > 85.0f)
 			betaAux = 85.0f;
 		else if (betaAux < -85.0f)
 			betaAux = -85.0f;
-		rAux = r;*/
+		rAux = r;
 	}
 	// right mouse button: zoom
 	else if (tracking == 2) {
@@ -417,13 +409,12 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	/*camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux * sin(betaAux * 3.14f / 180.0f);
-
-	cameras[current_camera]->setPosition({ camX, camY, camZ });
+	camX = 5*sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camZ = 5*cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camY = 5*sin(betaAux * 3.14f / 180.0f);
+	cameras[2]->setSphericCoords(vec3(camX, camY, camZ));
 	//  uncomment this if not using an idle or refresh func
-	//	glutPostRedisplay();*/
+	//	glutPostRedisplay();
 }
 
 
@@ -597,7 +588,9 @@ int main(int argc, char** argv) {
 	//	Camera initialization	
 	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f*WinY/WinX, -55.0f*WinY / WinX);
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
-	PerspectiveCamera camera3({0,0,0}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
+	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
+
+	currentPosition = vec3(-4, 1, 1);
 
 	cameras[0] = &camera1;
 	cameras[1] = &camera2;

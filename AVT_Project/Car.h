@@ -10,6 +10,7 @@
 #include "VSShaderlib.h"
 #include <math.h>
 #include "Light.h"
+#include "Camera.h"
 
 const float car_width = 1.0f;
 const float car_height = 0.5f;
@@ -32,6 +33,8 @@ class Car : public GameObject {
 	float a = 0;
 
 	Light spotlight;
+	float spotlight_radius;
+	float body_transformations[16];
 
 public:
     Car(vec3 position, float accel, float max_speed, vec4 body_color, vec4 tires_color) : GameObject(position) {
@@ -43,7 +46,13 @@ public:
 		spotlight.position = vec4(position.x + car_width / 2 + 0.1f, position.y + 0.3f, position.z, 1.0f);
 		float angle = 15.0f * 3.1415f / 180.0f;
 		spotlight.cut_off = cos(angle);
+
+		spotlight_radius = car_width / 2 + 0.1f;
     }
+
+	float* getBodyTransformations() {
+		return body_transformations;
+	}
 
 	void goForward(float dt) {
 		setSpeed(getSpeed() + accel * dt);
@@ -56,14 +65,11 @@ public:
 	void goLeft(float dt) {
 		setRotAngle(getRotAngle() + 50.0f * dt);
 		float angle = getRotAngle() * M_PI / 180;
-		spotlight.position = vec4(spotlight.position.x + ((car_width + 0.3f) / 2) * dt * sin(-angle), spotlight.position.y, spotlight.position.z + ((car_width + 0.3f) / 2) * dt * cos(M_PI-angle), 1.0f);
 	}
 
 	void goRight(float dt) {
 		setRotAngle(getRotAngle() - 50.0f * dt);
 		float angle = getRotAngle() * M_PI / 180;
-		spotlight.position = vec4(spotlight.position.x + ((car_width + 0.3f) / 2) * dt * sin(angle), spotlight.position.y, spotlight.position.z + ((car_width + 0.3f) / 2) * dt * cos(angle), 1.0f);
-
 	}
 
 	void stop(float dt) {
@@ -87,7 +93,7 @@ public:
 				count++;
 			}
 		}
-		spotlight.position = vec4(spotlight.position.x + speed_vector.x, spotlight.position.y + speed_vector.y, spotlight.position.z + speed_vector.z, 1.0f);
+		spotlight.position = vec4(getPosition().x + spotlight_radius*cos(angle), spotlight.position.y + speed_vector.y, getPosition().z + spotlight_radius * sin(-angle), 1.0f);
 		spotlight.direction = vec4(cos(angle), 0, sin(-angle), 0.0f);
 	}
 
@@ -114,9 +120,11 @@ public:
 	}
 
 	void bodyTransformations() {
+		setIdentityMatrix(body_transformations);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
 		rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
 		translate(MODEL, -car_width / 2, 0.25, -car_height / 2);
+		multMatrix(body_transformations, get(MODEL));
 		scale(MODEL, car_width, car_thickness, car_height);
 	}
 
@@ -128,13 +136,19 @@ public:
 		rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
 	}
 
-	void drawCar(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
+	void drawCar(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, Camera* camera) {
 		setShaders(shader, body);
 		float res[4];
 		float res1[4];
 		float res2[4];
 		float lights_pos[4] = { spotlight.position.x, spotlight.position.y, spotlight.position.z, spotlight.position.w };
 		float lights_dir[4] = { spotlight.direction.x, spotlight.direction.y, spotlight.direction.z, 0.0f };
+
+		pushMatrix(MODEL);
+		bodyTransformations();
+		vec3 up(0, 1, 0);
+		camera->setTransformations(body_transformations);
+		camera->lookAtPoint({ getPosition().x, getPosition().y, getPosition().z }, up);
 
 		multMatrixPoint(VIEW, lights_dir, res2);
 		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.direction");
@@ -150,8 +164,6 @@ public:
 		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.cutOff");
 		glUniform1f(loc, spotlight.cut_off);
 
-		pushMatrix(MODEL);
-		bodyTransformations();
 		drawMesh(body, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
 		for (int i = 0; i < tires.size(); i++) {

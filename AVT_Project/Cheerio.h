@@ -32,12 +32,14 @@ public:
 		float shininess = 10.0f;
 		int texcount = 0;
 		vec3 body_pos = getPosition();
-		body = createTorus(0.2f, 0.5f, 20, 100);
+		body = createTorus(0.1f, 0.3f, 10, 10);
 		body = setMesh(body, amb, diff, spec, emissive, shininess, texcount, body_pos);
 	}
 
 	void bodyTransformations() {
-		translate(MODEL, getPosition().x, getPosition().y + 0.15f, getPosition().z);
+		mMatrix[MODEL][12] = getPosition().x;
+		mMatrix[MODEL][13] = getPosition().y + 0.15f;
+		mMatrix[MODEL][14] = getPosition().z;
 	}
 
 	void drawCheerio(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
