@@ -5,6 +5,7 @@
 
 class PerspectiveCamera : public Camera {
 	float fov;
+	vec3 spheric_coords;
 
 
 public:
@@ -13,6 +14,7 @@ public:
 	PerspectiveCamera(vec3 position, vec3 target, bool fixed, float near_plane, float far_plane, float fov) : Camera(position, target, fixed, near_plane, far_plane) {
 		this->fov = fov;
 	}
+
 
 	void setViewPort(int w, int h){
 		float ratio;

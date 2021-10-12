@@ -124,7 +124,9 @@ float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 
 float oldTime = 0.0f;
 float dt = 0.0f;
-int direction = 0;
+
+bool leftKey = false;
+
 //----------------Lights---------------------
 Light directionalLight;
 //-------------------------------------------
@@ -173,11 +175,9 @@ void update() {
 	}
 	if (keys['o']) {
 		car.goLeft(dt);
-		direction = -1;
 	}
 	if (keys['p']) {
 		car.goRight(dt);
-		direction = 1;
 	}
 
 }
@@ -188,8 +188,16 @@ void setCameraTarget() {
 	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
 		up = vec3(0, 0, 1);
 	}
-
-	if (current_camera != 2) {
+	float angle = car.getRotAngle() * M_PI / 180;
+	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
+	normalized_speed.y = -2;
+	cameras[2]->setPosition(car.getPosition() - normalized_speed);
+	float radius = sqrt(pow(car.getPosition().x - cameras[2]->getPosition().x, 2) + pow(car.getPosition().z - cameras[2]->getPosition().z, 2));
+	if (current_camera == 2) {
+		cameras[2]->lookAtPoint({ cameras[2]->getPosition().x + radius*cos(camera_angle_xz), car.getPosition().y, cameras[2]->getPosition().z + radius * sin(-camera_angle_xz)}, up);
+		printf("lookat: %f  %f\n", cameras[2]->getPosition().x + (car.getPosition().x - cameras[2]->getPosition().x) * cos(camera_angle_xz), cameras[2]->getPosition().z + (car.getPosition().x - cameras[2]->getPosition().x) * sin(-camera_angle_xz));
+	}
+	else {
 		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
 	}
 }
@@ -333,10 +341,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case '3': current_camera = 2; cameras[current_camera]->setViewPort(WinX, WinY); break;
 
 		// Car movement keys
-	case 'q': keys['q'] = true; break;
+	case 'w': keys['w'] = true; break;
+	case 's': keys['s'] = true; break;
 	case 'a': keys['a'] = true; break;
-	case 'o': keys['o'] = true; break;
-	case 'p': keys['p'] = true; break;
+	case 'd': keys['d'] = true; break;
 	}
 }
 
@@ -353,10 +361,11 @@ void processMouseButtons(int button, int state, int xx, int yy)
 		mouse_pressed = true;
 		startX = xx;
 		startY = yy;
-		if (button == GLUT_LEFT_BUTTON) { tracking = 1; camera_angle_xz += 0.1f; }
+		if (button == GLUT_LEFT_BUTTON) { tracking = 1; leftKey = true; }
 			
 		else if (button == GLUT_RIGHT_BUTTON)
 			tracking = 2;
+
 	}
 
 	//stop tracking the mouse
@@ -389,7 +398,7 @@ void processMouseMotion(int xx, int yy)
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-		//camera_angle_xz = (float)(deltaX * (M_PI / 180.0f));
+	
 		alphaAux = alpha + deltaX;
 		betaAux = beta + deltaY;
 
