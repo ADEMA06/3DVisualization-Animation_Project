@@ -95,6 +95,6 @@ void main() {
 		
 	}
 
-	colorOut = diffuse + spec + mat.ambient;//max((dirIntensity+spotIntensity+pointIntensity) * diffuse + spec, mat.ambient);
+	colorOut = vec4(vec3(diffuse + spec + mat.ambient), mat.diffuse.a);//max((dirIntensity+spotIntensity+pointIntensity) * diffuse + spec, mat.ambient);
 
 }

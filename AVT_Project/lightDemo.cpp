@@ -185,6 +185,7 @@ void update() {
 //
 
 void renderScene(void) {
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	int t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
@@ -230,7 +231,6 @@ void renderScene(void) {
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
-	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	for (int i = 0; i < cheerios.size(); i++) {
@@ -312,6 +312,8 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+
+	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	update();
 
 	glutSwapBuffers();
@@ -586,7 +588,8 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_BLEND);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 }
 

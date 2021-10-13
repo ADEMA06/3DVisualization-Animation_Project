@@ -93,7 +93,7 @@ public:
 
 	void createCar() {
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-		float diff[] = { body_color.x, body_color.y, body_color.z, body_color.w};
+		float diff[] = { body_color.x, body_color.y, body_color.z, 1};
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float shininess = 100.0f;
