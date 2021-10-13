@@ -109,6 +109,7 @@ void main() {
 	vec3 finalColor = mix(fogColor, colorRGB, f);
 	
 	colorOut = vec4(vec3(finalColor), mat.diffuse.a);
+
 	//colorOut = vec4(dist, dist, dist, 1.0f);
 
 }
