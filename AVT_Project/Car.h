@@ -16,6 +16,8 @@ const float car_width = 1.0f;
 const float car_height = 0.5f;
 const float car_thickness = 0.5f;
 
+extern int current_camera;
+
 /// The storage for matrices
 extern float mMatrix[COUNT_MATRICES][16];
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
@@ -42,6 +44,7 @@ public:
         this->body_color = body_color;
         this->tires_color = tires_color;
 		this->accel = accel;
+		spotlight.on = 1;
 		spotlight.direction = vec4(1.0f, 0.0f, 0.0f, 0.0f);
 		spotlight.position = vec4(position.x + car_width / 2 + 0.1f, position.y + 0.3f, position.z, 1.0f);
 		float angle = 15.0f * 3.1415f / 180.0f;
@@ -148,7 +151,9 @@ public:
 		bodyTransformations();
 		vec3 up(0, 1, 0);
 		camera->setTransformations(body_transformations);
-		camera->lookAtPoint({ getPosition().x, getPosition().y, getPosition().z }, up);
+		if (current_camera == 2) {
+			camera->lookAtPoint({ getPosition().x, getPosition().y, getPosition().z }, up);
+		}
 
 		multMatrixPoint(VIEW, lights_dir, res2);
 		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.direction");
@@ -158,8 +163,8 @@ public:
 		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.position");
 		glUniform4fv(loc, 1, res);
 
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.on");
-		glUniform1d(loc, true);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "spot_on");
+		glUniform1i(loc, spotlight.on);
 
 		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.cutOff");
 		glUniform1f(loc, spotlight.cut_off);

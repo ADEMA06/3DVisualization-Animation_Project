@@ -12,19 +12,16 @@ uniform vec4 spot_dir;
 
 struct DirectionalLight {
 	vec4 direction;
-	bool on;
 };
 
 struct SpotLight {
 	vec4 position;
 	vec4 direction;
-	bool on;
 	float cutOff;
 };
 
 struct pointLight{
 	vec4 position;
-	float on;
 	vec3 lightDir;
 };
 
@@ -36,7 +33,7 @@ out pointLight pointlights[6];
 out DirectionalLight dirlight;
 out SpotLight spotlights;
 
-
+out vec4 pos;
 
 out Data {
 	vec3 normal;
@@ -46,23 +43,20 @@ out Data {
 
 void main () {
 
-	vec4 pos = m_viewModel * position;
+	pos = m_viewModel * position;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	DataOut.lightDir = vec3(uni_spotlights.position - pos);
 	DataOut.eye = vec3(-pos);
 
 	dirlight.direction = -uni_dirlight.direction;
-	dirlight.on = uni_dirlight.on;
 
 	spotlights.direction = -uni_spotlights.direction;
 	spotlights.position = uni_spotlights.position;
-	spotlights.on = uni_spotlights.on;
 	spotlights.cutOff = uni_spotlights.cutOff;
 
 	for(int i = 0; i < 6; i++) {
 		pointlights[i].lightDir = vec3(uni_pointlights[i].position - pos);
-		pointlights[i].on = uni_pointlights[i].on;
 	}
 
 	gl_Position = m_pvm * position;	

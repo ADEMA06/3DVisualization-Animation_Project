@@ -49,7 +49,7 @@ unsigned int FrameCount = 0;
 
 bool keys[256] = { false };
 
-float pointLights_on = 1.0;
+int pointLights_on = 1;
 
 float camera_angle_xz = M_PI;
 
@@ -83,7 +83,7 @@ std::vector<Cheerio> cheerios;
 vector<Candle> candles;
 
 
-int current_camera = 2;
+int current_camera = 0;
 Camera* cameras[3];
 
 VSShaderLib shader;
@@ -188,16 +188,7 @@ void setCameraTarget() {
 	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
 		up = vec3(0, 0, 1);
 	}
-	float angle = car.getRotAngle() * M_PI / 180;
-	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
-	normalized_speed.y = -2;
-	cameras[2]->setPosition(car.getPosition() - normalized_speed);
-	float radius = sqrt(pow(car.getPosition().x - cameras[2]->getPosition().x, 2) + pow(car.getPosition().z - cameras[2]->getPosition().z, 2));
-	if (current_camera == 2) {
-		cameras[2]->lookAtPoint({ cameras[2]->getPosition().x + radius*cos(camera_angle_xz), car.getPosition().y, cameras[2]->getPosition().z + radius * sin(-camera_angle_xz)}, up);
-		printf("lookat: %f  %f\n", cameras[2]->getPosition().x + (car.getPosition().x - cameras[2]->getPosition().x) * cos(camera_angle_xz), cameras[2]->getPosition().z + (car.getPosition().x - cameras[2]->getPosition().x) * sin(-camera_angle_xz));
-	}
-	else {
+	if (current_camera != 2) {
 		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
 	}
 }
@@ -207,7 +198,7 @@ void drawObjects() {
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, car.getPosition());
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
@@ -223,7 +214,7 @@ void setLights() {
 	multMatrixPoint(VIEW, dirlight_direction, res);
 	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.direction");
 	glUniform4fv(loc, 1, res);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.on");
+	loc = glGetUniformLocation(shader.getProgramIndex(), "dir_on");
 	glUniform1i(loc, directionalLight.on);
 
 	int count = 0;
@@ -236,10 +227,9 @@ void setLights() {
 		loc = glGetUniformLocation(shader.getProgramIndex(), location.c_str());
 		glUniform4fv(loc, 1, mult);
 
-		string location_on = "uni_pointlights[" + to_string(i) + "].on";
-		loc = glGetUniformLocation(shader.getProgramIndex(), location_on.c_str());
-		glUniform1f(loc, pointLights_on);
 	}
+	loc = glGetUniformLocation(shader.getProgramIndex(), "point_on");
+	glUniform1i(loc, pointLights_on);
 }
 
 // ------------------------------------------------------------
@@ -330,8 +320,8 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 
 	case 'c': 
-		 pointLights_on = pointLights_on*-1.0 + 1.0;
-			break;
+		pointLights_on = !pointLights_on;
+		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'n': directionalLight.on = !directionalLight.on; break;
 
@@ -341,10 +331,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case '3': current_camera = 2; cameras[current_camera]->setViewPort(WinX, WinY); break;
 
 		// Car movement keys
-	case 'w': keys['w'] = true; break;
-	case 's': keys['s'] = true; break;
+	case 'q': keys['q'] = true; break;
+	case 'o': keys['o'] = true; break;
 	case 'a': keys['a'] = true; break;
-	case 'd': keys['d'] = true; break;
+	case 'p': keys['p'] = true; break;
 	}
 }
 
@@ -501,25 +491,32 @@ void init()
 	int texcount = 0;
 
 	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	directionalLight.on = true;
+	directionalLight.on = 1;
 
+	MyMesh* torus = new MyMesh;
+	float diff1[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	torus = new MyMesh(createTorus(0.1, 0.2, 12, 12));
+	memcpy(torus->mat.ambient, amb, 4 * sizeof(float));
+	memcpy(torus->mat.diffuse, diff1, 4 * sizeof(float));
+	memcpy(torus->mat.specular, spec, 4 * sizeof(float));
+	memcpy(torus->mat.emissive, emissive, 4 * sizeof(float));
+	torus->mat.shininess = shininess;
+	torus->mat.texCount = texcount;
 
+	road.setMesh(torus);
 
 	road.doNorthRoad(20);
 	road.doEastCurve();
-	road.doEastRoad(20);
+	road.doEastRoad(30);
 	road.doNorthCurve();
-	road.doNorthRoad(30);
+	road.doNorthRoad(15);
+	road.doWestCurve();
+	road.doWestRoad(70);
+	road.doSouthCurve();
+	road.doSouthRoad(80);
 
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };
-	for (int i = 0; i < n_cherrios; i++) {
-		int j = rand() % 2;
-		vec3 position = vec3(offset[j] * rand() % 45, 0.0f, offset[j] * (rand() % 45));
-		Cheerio cheerio(position, vec4(1.0f, 0.8745f, 0.0f, 1.0f));
-		cheerio.createCheerio();
-		cheerios.push_back(cheerio);
-	}
 
 	Candle candle1(vec3(50, 0, 0), butter_foil_color);
 	Candle candle2(vec3(0, 0, 50), butter_foil_color);
@@ -580,7 +577,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.66f, 0.1f, 0.1f, 1.0f);
 
 }
 

@@ -8,6 +8,6 @@ struct Light {
 	float linear_attenuation;
 	float quad_attenuation;
 	float const_attenuation;
-	bool on;
+	int on;
 	int type;
 };

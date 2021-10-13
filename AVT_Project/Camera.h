@@ -12,8 +12,7 @@ class Camera {
 	float far_plane;
 	float near_plane;
 	vec3 spheric_coords;
-	vec3 final_position;
-
+	
 	
 protected:
 	Camera() {
@@ -27,29 +26,25 @@ public:
 		return position;
 	}
 
+	vec3 getTarget() {
+		return target;
+	}
+
 	void setPosition(vec3 position) {
 		if (!fixed) {
 			this->position = position;
 		}
 	}
 
-	vec3 getFinalPosition() {
-		return final_position;
-	}
-
-	void setFinalPosition(vec3 position) {
-		if (!fixed) {
-			this->final_position = position;
-		}
-	}
-
 	void setTarget(vec3 target) {
-		this->target = target;
+		if (!fixed) {
+			this->target = target;
+		}
 	}
 
 	void lookAtPoint(vec3 target, vec3 up) {
 		setTarget(target);
-		lookAt(final_position.x, final_position.y, final_position.z, target.x, target.y, target.z, up.x, up.y, up.z);
+		lookAt(position.x, position.y, position.z, target.x, target.y, target.z, up.x, up.y, up.z);
 	}
 
 	float getNearPlane() {
