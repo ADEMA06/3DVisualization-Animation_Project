@@ -7,7 +7,7 @@
 
 
 class Road {
-
+	struct MyMesh* mesh;
 	float width = 5.0f;
 	vec3 last_pos;
 	std::vector<Cheerio> limits;
@@ -17,12 +17,14 @@ public:
 		last_pos = initial_pos;
 	}
 
+	void setMesh(MyMesh* mesh) {
+		this->mesh = mesh;
+	}
+
 	void doNorthRoad(int length) {
 		for (int i = 0; i < length; i++) {
 			Cheerio c1 = Cheerio({ float(i) + last_pos.x, 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			Cheerio c2 = Cheerio({ float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c1.createCheerio();
-			c2.createCheerio();
 			limits.push_back(c1);
 			limits.push_back(c2);
 		}
@@ -32,18 +34,14 @@ public:
 	void doNorthCurve() {
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ last_pos.x - width / 2 , 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		Cheerio c1 = Cheerio({ last_pos.x + width / 2, 0, float(last_pos.z) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c1.createCheerio();
 		limits.push_back(c1);
 		Cheerio c2 = Cheerio({ last_pos.x + width / 2, 0, float(last_pos.z + 1) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c2.createCheerio();
 		limits.push_back(c2);
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ float(i) + last_pos.x - 2.5f, 0, last_pos.z + 6 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		last_pos = last_pos + vec3(3.5, 0, 3.5);
@@ -53,8 +51,6 @@ public:
 		for (int i = 0; i < length; i++) {
 			Cheerio c1 = Cheerio({ last_pos.x - width / 2, 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			Cheerio c2 = Cheerio({ last_pos.x + width / 2, 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c1.createCheerio();
-			c2.createCheerio();
 			limits.push_back(c1);
 			limits.push_back(c2);
 		}
@@ -64,18 +60,14 @@ public:
 	void doEastCurve() {
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ float(i) + last_pos.x, 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		Cheerio c1 = Cheerio({ float(last_pos.x), 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c1.createCheerio();
 		limits.push_back(c1);
 		Cheerio c2 = Cheerio({ float(last_pos.x + 1), 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c2.createCheerio();
 		limits.push_back(c2);
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ last_pos.x + 6, 0, float(i) + last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		last_pos = last_pos + vec3(3.5, 0, 3.5);
@@ -84,18 +76,14 @@ public:
 	void doWestCurve() {
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		Cheerio c1 = Cheerio({ float(last_pos.x), 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c1.createCheerio();
 		limits.push_back(c1);
 		Cheerio c2 = Cheerio({ float(last_pos.x + 1), 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c2.createCheerio();
 		limits.push_back(c2);
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ last_pos.x + 6, 0, -float(i) + last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		last_pos = last_pos + vec3(3.5, 0, -3.5);
@@ -105,8 +93,6 @@ public:
 		for (int i = 0; i < length; i++) {
 			Cheerio c1 = Cheerio({ last_pos.x - width / 2, 0, -float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			Cheerio c2 = Cheerio({ last_pos.x + width / 2, 0, -float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c1.createCheerio();
-			c2.createCheerio();
 			limits.push_back(c1);
 			limits.push_back(c2);
 		}
@@ -116,18 +102,14 @@ public:
 	void doSouthCurve() {
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ last_pos.x + width / 2 , 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		Cheerio c1 = Cheerio({ last_pos.x - width / 2, 0, float(last_pos.z) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c1.createCheerio();
 		limits.push_back(c1);
 		Cheerio c2 = Cheerio({ last_pos.x - width / 2, 0, float(last_pos.z + 1) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		c2.createCheerio();
 		limits.push_back(c2);
 		for (int i = 0; i < 6; i++) {
 			Cheerio c = Cheerio({ -float(i) + last_pos.x + width/2, 0, last_pos.z + 6 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c.createCheerio();
 			limits.push_back(c);
 		}
 		last_pos = last_pos + vec3(-3.5, 0, 3.5);
@@ -137,8 +119,6 @@ public:
 		for (int i = 0; i < length; i++) {
 			Cheerio c1 = Cheerio({ -float(i) + last_pos.x, 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			Cheerio c2 = Cheerio({ -float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			c1.createCheerio();
-			c2.createCheerio();
 			limits.push_back(c1);
 			limits.push_back(c2);
 		}
@@ -146,9 +126,14 @@ public:
 	}
 
 
-	void draw(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
-		for (int i = 0; i < limits.size(); i++)
-			limits.at(i).drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	void draw(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, vec3 car_position) {
+		int size = limits.size();
+		for (int i = 0; i < size; i++) {
+			double dist = sqrt(pow(car_position.x - limits.at(i).getPosition().x, 2) + pow(car_position.y - limits.at(i).getPosition().y, 2) + pow(car_position.z - limits.at(i).getPosition().z, 2));
+			if (dist < 40) {
+				limits.at(i).drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, this->mesh);
+			}
+		}
 	}
 
 

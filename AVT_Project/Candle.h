@@ -31,6 +31,7 @@ public:
 	Candle(vec3 position, vec4 color) : GameObject(position) {
 		this->color = color;
 		this->pointlight.position = vec4(position.x, position.y + height, position.z, 1.0f);
+		this->pointlight.on = 1;
 	}
 
 	Light getPointLight() {
@@ -52,24 +53,6 @@ public:
 
 	void drawCandle(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
 		setShaders(shader, candle);
-		/*float res[4];
-		float res1[4];
-		float res2[4];
-		float lights_pos[4] = { spotlight.position.x, spotlight.position.y, spotlight.position.z, spotlight.position.w };
-
-		multMatrixPoint(VIEW, lights_dir, res2);
-		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.direction");
-		glUniform4fv(loc, 1, res2);
-
-		multMatrixPoint(VIEW, lights_pos, res);   //lightPos definido em World Coord so is converted to eye space
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.position");
-		glUniform4fv(loc, 1, res);
-
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.on");
-		glUniform1d(loc, true);
-
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.cutOff");
-		glUniform1f(loc, spotlight.cut_off);*/
 
 		pushMatrix(MODEL);
 		translate(MODEL, getPosition().x, getPosition().y + height/2, getPosition().z);

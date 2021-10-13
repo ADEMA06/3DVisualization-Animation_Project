@@ -1,6 +1,6 @@
 #ifndef __VEC_H__
 #define __VEC_H__
-#include <cmath>
+#include <math.h>
 
 struct vec3 {
     float x;
@@ -15,7 +15,7 @@ struct vec3 {
 
     vec3 normalize() {
         vec3 normalized = { x, y, z };
-        float magnitude = std::sqrt(std::pow(x, 2) + std::pow(y, 2) + std::pow(z, 2));
+        float magnitude = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
         if (magnitude != 0)
         {
             normalized.x /= magnitude;
@@ -25,6 +25,23 @@ struct vec3 {
 
         return normalized;
 
+    }
+
+    float dot(vec3 v) {
+        return x * v.x + y * v.y + z * v.z;
+    }
+
+    float magnitude() {
+        return sqrt(x * x + y * y + z * z);
+    }
+
+    float angleWith(vec3 v) {
+        float d = dot(v);
+        float m = magnitude() * v.magnitude();
+        if (d == m) {
+            return 0;
+        }
+        return acos(d / m);
     }
 
     friend vec3 operator+(const vec3& lvalue, const vec3& rvalue) {

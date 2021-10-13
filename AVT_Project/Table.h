@@ -45,7 +45,6 @@ public:
 		float shininess = 500.0f;
 		int texcount = 0;
 		vec3 table_pos = getPosition();
-		printf("table: %f %f %f\n", table_pos.x, table_pos.y, table_pos.z);
 		base = createCube();
 		base = setMesh(base, amb, diff, spec, emissive, shininess, texcount, table_pos);
 		MyMesh amesh;
@@ -53,7 +52,6 @@ public:
 			for(int j = -1; j <= 1; j+=2) {
 				amesh = createCube();
 				vec3 position = table_pos + vec3(j*width/2 - j*legSide/2, -legHeight, i * height / 2 - i * legSide/2);
-				printf("%f %f %f\n", position.x, position.y, position.z);
 				amesh = setMesh(amesh, amb, diff, spec, emissive, shininess, texcount, position);
 				legs.push_back(amesh);
 			}

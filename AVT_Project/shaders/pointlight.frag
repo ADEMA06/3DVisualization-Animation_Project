@@ -15,25 +15,28 @@ uniform Materials mat;
 
 struct DirectionalLight {
 	vec4 direction;
-	bool on;
 };
 
 struct SpotLight {
 	vec4 position;
 	vec4 direction;
-	bool on;
 	float cutOff;
 };
 
 struct pointLight{
 	vec4 position;
-	float on;
 	vec3 lightDir;
 };
+
+uniform int point_on;
+uniform int dir_on;
+uniform int spot_on;
 
 in pointLight pointlights[6];
 in DirectionalLight dirlight;
 in SpotLight spotlights;
+
+in vec4 pos;
 
 in Data {
 	vec3 normal;
@@ -54,7 +57,7 @@ void main() {
 	vec3 e = normalize(DataIn.eye);
 
 	float dirIntensity = 0.0f;
-	if(dirlight.on) {
+	if(dir_on != 0) {
 		dirIntensity = max(dot(n, dir_l), 0.0);
 		if(dirIntensity > 0.0) {
 			vec3 h = normalize(dir_l + e);
@@ -67,19 +70,21 @@ void main() {
 
 	float spotIntensity = 0.0f;
 	spotIntensity = max(dot(n, l), 0.0);
-	if(dot(spot_dir, l) > 0.866) {
-		if (spotIntensity > 0.0) {
-			vec3 h = normalize(l + e);
-			float intSpec = max(dot(h,n), 0.0);
-			spec += mat.specular * pow(intSpec, mat.shininess);
-			diffuse += mat.diffuse * spotIntensity;
+	if(spot_on != 0) {
+		if(dot(spot_dir, l) > 0.866) {
+			if (spotIntensity > 0.0) {
+				vec3 h = normalize(l + e);
+				float intSpec = max(dot(h,n), 0.0);
+				spec += mat.specular * pow(intSpec, mat.shininess);
+				diffuse += mat.diffuse * spotIntensity;
+			}
 		}
 	}
 
 
 	float pointIntensity = 0.0;
 	for(int i = 0; i < 6; i = i+1) {
-		if(pointlights[i].on != 0.0f) {
+		if(point_on != 0) {
 			float distance = sqrt(pow(pointlights[i].lightDir.x,2) + pow(pointlights[i].lightDir.y,2) + pow(pointlights[i].lightDir.z,2));
 			float attenuation = 1.0/(1.0 + 0.1*distance+ 0.01*distance*distance);
 			l = normalize(pointlights[i].lightDir);
@@ -95,6 +100,15 @@ void main() {
 		
 	}
 
-	colorOut = vec4(vec3(diffuse + spec + mat.ambient), mat.diffuse.a);//max((dirIntensity+spotIntensity+pointIntensity) * diffuse + spec, mat.ambient);
+	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
+	float f = exp(-0.1*dist);
+
+	colorOut = diffuse + spec + mat.ambient;
+	vec3 colorRGB = vec3(colorOut);
+	vec3 fogColor = vec3(0.75, 0.1, 0.1);
+	vec3 finalColor = mix(fogColor, colorRGB, f);
+	
+	colorOut = vec4(vec3(finalColor), mat.diffuse.a);
+	//colorOut = vec4(dist, dist, dist, 1.0f);
 
 }

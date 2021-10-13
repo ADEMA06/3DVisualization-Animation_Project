@@ -156,6 +156,8 @@
 
 		void multMatrixPoint(MatrixTypes aType, float *point, float *res);
 
+		void multMatrixPoint(float* aType, float* point, float* res);
+
 
 		/** Computes the multiplication of a computed matrix and a point 
 		  *

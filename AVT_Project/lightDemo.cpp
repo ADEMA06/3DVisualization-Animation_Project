@@ -49,9 +49,9 @@ unsigned int FrameCount = 0;
 
 bool keys[256] = { false };
 
-float pointLights_on = 1.0;
+int pointLights_on = 1;
 
-float camera_angle_xz = 0.0f;
+float camera_angle_xz = M_PI;
 
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
@@ -83,7 +83,7 @@ std::vector<Cheerio> cheerios;
 vector<Candle> candles;
 
 
-int current_camera = 2;
+int current_camera = 0;
 Camera* cameras[3];
 
 VSShaderLib shader;
@@ -131,6 +131,9 @@ bool leftKey = false;
 Light directionalLight;
 //-------------------------------------------
 
+bool mouse_pressed = false;
+vec3 oldPosition = vec3(0.0f,0.0f,0.0f);
+vec3 currentPosition;
 
 void timer(int value)
 {
@@ -146,7 +149,7 @@ void timer(int value)
 void refresh(int value)
 {
 	glutPostRedisplay();
-	glutTimerFunc(1000 / 60, refresh, 0);
+	glutTimerFunc(0, refresh, 0);
 }
 
 // ------------------------------------------------------------
@@ -161,100 +164,57 @@ void changeSize(int w, int h) {
 }
 
 void update() {
-	if (!(keys['w'] || keys['s'])) {
+	if (!(keys['q'] || keys['a'])) {
 		car.stop(dt);
 	}
-	if (keys['w']) {
+	if (keys['q']) {
 		car.goForward(dt);
 	}
-	if (keys['s']) {
+	if (keys['a']) {
 		car.goBackwards(dt);
 	}
-	if (keys['a']) {
+	if (keys['o']) {
 		car.goLeft(dt);
 	}
-	if (keys['d']) {
+	if (keys['p']) {
 		car.goRight(dt);
 	}
 
 }
 
-// ------------------------------------------------------------
-//
-// Render stufff
-//
-
-void renderScene(void) {
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	int t = glutGet(GLUT_ELAPSED_TIME);
-	dt = (t - oldTime) / 1000;
-	oldTime = t;
-
-	GLint loc;
-
-	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// load identity matrices
-	loadIdentity(VIEW);
-	loadIdentity(MODEL);
-	// set the camera using a function similar to gluLookAt
+void setCameraTarget() {
 	vec3 up(0, 1, 0);
 	vec3 cameraPos = cameras[current_camera]->getPosition();
 	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
 		up = vec3(0, 0, 1);
 	}
-	float angle = car.getRotAngle() * M_PI / 180;
-	vec3 normalized_speed = vec3(cos(angle), 0, sin(-angle)).normalize() * 5.0f;
-	normalized_speed.y = -2;
-	if(!leftKey)
-		cameras[2]->setFinalPosition(car.getPosition() - normalized_speed);
-	else {
-		cameras[2]->setFinalPosition(car.getPosition() + cameras[2]->getSphericCoords());
-	}
-	float radius = sqrt(pow(car.getPosition().x - cameras[2]->getPosition().x, 2) + pow(car.getPosition().z - cameras[2]->getPosition().z, 2));
-	if (current_camera == 2) {
-		cameras[2]->lookAtPoint(car.getPosition() ,up);
-	}
-	else {
+	if (current_camera != 2) {
 		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
 	}
-	// use our shader
-	glUseProgram(shader.getProgramIndex());
+}
 
-	//send the light position in eye coordinates
-
-		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
-
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
-
-	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+void drawObjects() {
+	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
+	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	for (int i = 0; i < cheerios.size(); i++) {
-		cheerios[i].drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	}
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
-	car.update(dt);
-	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-
-	butter1.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	butter2.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	butter3.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, car.getPosition());
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
+	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
+	car.update(dt);
+}
 
-	//--------------Lights--------------------------------
+void setLights() {
+	GLint loc;
+	float res[4];
 	float dirlight_direction[4] = { 0.0f, -1.0f, 0.0f, 0.0f };
 	multMatrixPoint(VIEW, dirlight_direction, res);
 	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.direction");
 	glUniform4fv(loc, 1, res);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.on");
+	loc = glGetUniformLocation(shader.getProgramIndex(), "dir_on");
 	glUniform1i(loc, directionalLight.on);
 
 	int count = 0;
@@ -267,16 +227,41 @@ void renderScene(void) {
 		loc = glGetUniformLocation(shader.getProgramIndex(), location.c_str());
 		glUniform4fv(loc, 1, mult);
 
-		string location_on = "uni_pointlights[" + to_string(i) + "].on";
-		loc = glGetUniformLocation(shader.getProgramIndex(), location_on.c_str());
-		glUniform1f(loc, pointLights_on);
 	}
-	
+	loc = glGetUniformLocation(shader.getProgramIndex(), "point_on");
+	glUniform1i(loc, pointLights_on);
+}
 
-	//----------------------------------------------------
+// ------------------------------------------------------------
+//
+// Render stufff
+//
 
+void renderScene(void) {
+	int t = glutGet(GLUT_ELAPSED_TIME);
+	dt = (t - oldTime) / 1000;
+	oldTime = t;
 
+	GLint loc;
 
+	FrameCount++;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// load identity matrices
+	loadIdentity(VIEW);
+	loadIdentity(MODEL);
+	// set the camera using a function similar to gluLookAt
+	// use our shader
+	glUseProgram(shader.getProgramIndex());
+	setCameraTarget();
+
+	float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   
+	glUniform4fv(lPos_uniformId, 1, res);
+
+	int objId = 0;
+	drawObjects();
+	setLights();
+	update();
 	for (int i = 0; i < 3; ++i) {
 
 		// send the material
@@ -338,8 +323,8 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 
 	case 'c': 
-		 pointLights_on = pointLights_on*-1.0 + 1.0;
-			break;
+		pointLights_on = !pointLights_on;
+		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'n': directionalLight.on = !directionalLight.on; break;
 
@@ -349,10 +334,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case '3': current_camera = 2; cameras[current_camera]->setViewPort(WinX, WinY); break;
 
 		// Car movement keys
-	case 'w': keys['w'] = true; break;
-	case 's': keys['s'] = true; break;
+	case 'q': keys['q'] = true; break;
+	case 'o': keys['o'] = true; break;
 	case 'a': keys['a'] = true; break;
-	case 'd': keys['d'] = true; break;
+	case 'p': keys['p'] = true; break;
 	}
 }
 
@@ -366,6 +351,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 {
 	// start tracking the mouse
 	if (state == GLUT_DOWN) {
+		mouse_pressed = true;
 		startX = xx;
 		startY = yy;
 		if (button == GLUT_LEFT_BUTTON) { tracking = 1; leftKey = true; }
@@ -377,7 +363,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 
 	//stop tracking the mouse
 	else if (state == GLUT_UP) {
-		leftKey = false;
+		mouse_pressed = false;
 		if (tracking == 1) {
 			alpha -= (xx - startX);
 			beta += (yy - startY);
@@ -425,13 +411,12 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux * sin(betaAux * 3.14f / 180.0f);
-
-	cameras[2]->setSphericCoords({ camX, camY, camZ });
+	camX = 5*sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camZ = 5*cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camY = 5*sin(betaAux * 3.14f / 180.0f);
+	cameras[2]->setSphericCoords(vec3(camX, camY, camZ));
 	//  uncomment this if not using an idle or refresh func
-	//	glutPostRedisplay();*/
+	//	glutPostRedisplay();
 }
 
 
@@ -509,25 +494,32 @@ void init()
 	int texcount = 0;
 
 	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	directionalLight.on = true;
+	directionalLight.on = 1;
 
+	MyMesh* torus = new MyMesh;
+	float diff1[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	torus = new MyMesh(createTorus(0.1, 0.2, 12, 12));
+	memcpy(torus->mat.ambient, amb, 4 * sizeof(float));
+	memcpy(torus->mat.diffuse, diff1, 4 * sizeof(float));
+	memcpy(torus->mat.specular, spec, 4 * sizeof(float));
+	memcpy(torus->mat.emissive, emissive, 4 * sizeof(float));
+	torus->mat.shininess = shininess;
+	torus->mat.texCount = texcount;
 
+	road.setMesh(torus);
 
 	road.doNorthRoad(20);
 	road.doEastCurve();
-	road.doEastRoad(20);
+	road.doEastRoad(30);
 	road.doNorthCurve();
-	road.doNorthRoad(30);
+	road.doNorthRoad(15);
+	road.doWestCurve();
+	road.doWestRoad(70);
+	road.doSouthCurve();
+	road.doSouthRoad(80);
 
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };
-	for (int i = 0; i < n_cherrios; i++) {
-		int j = rand() % 2;
-		vec3 position = vec3(offset[j] * rand() % 45, 0.0f, offset[j] * (rand() % 45));
-		Cheerio cheerio(position, vec4(1.0f, 0.8745f, 0.0f, 1.0f));
-		cheerio.createCheerio();
-		cheerios.push_back(cheerio);
-	}
 
 	Candle candle1(vec3(50, 0, 0), butter_foil_color);
 	Candle candle2(vec3(0, 0, 50), butter_foil_color);
@@ -588,8 +580,8 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
+	glClearColor(0.66f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_BLEND);
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 }
 
@@ -606,7 +598,9 @@ int main(int argc, char** argv) {
 	//	Camera initialization	
 	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f*WinY/WinX, -55.0f*WinY / WinX);
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
-	PerspectiveCamera camera3({0,0,0}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
+	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
+
+	currentPosition = vec3(-4, 1, 1);
 
 	cameras[0] = &camera1;
 	cameras[1] = &camera2;
@@ -630,8 +624,8 @@ int main(int argc, char** argv) {
 	glutReshapeFunc(changeSize);
 
 	glutTimerFunc(0, timer, 0);
-	glutIdleFunc(renderScene);  // Use it for maximum performance
-	//glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
+	//glutIdleFunc(renderScene);  // Use it for maximum performance
+	glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);

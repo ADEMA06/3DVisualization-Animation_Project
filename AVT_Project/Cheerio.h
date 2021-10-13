@@ -15,16 +15,23 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 /// The normal matrix
 extern float mNormal3x3[9];
 
-class Cheerio : GameObject {
-	struct MyMesh body;
+class Cheerio : public GameObject {
+	struct MyMesh* body;
 	vec4 body_color;
+	vec3 position;
 
 public:
 	Cheerio(vec3 position, vec4 body_color) : GameObject(position) {
 		this->body_color = body_color;
 	}
 
-	void createCheerio() {
+	Cheerio(vec3 position, vec4 body_color, MyMesh* mesh) : GameObject(position) {
+		this->body_color = body_color;
+		body = mesh;
+		this->position = position;
+	}
+
+	/*void createCheerio() {
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
 		float diff[] = { body_color.x, body_color.y, body_color.z, body_color.w };
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -32,20 +39,21 @@ public:
 		float shininess = 10.0f;
 		int texcount = 0;
 		vec3 body_pos = getPosition();
-		body = createTorus(0.2f, 0.5f, 20, 100);
 		body = setMesh(body, amb, diff, spec, emissive, shininess, texcount, body_pos);
-	}
+	}*/
 
 	void bodyTransformations() {
-		translate(MODEL, getPosition().x, getPosition().y + 0.15f, getPosition().z);
+		mMatrix[MODEL][12] = getPosition().x;
+		mMatrix[MODEL][13] = getPosition().y + 0.15f;
+		mMatrix[MODEL][14] = getPosition().z;
 	}
 
-	void drawCheerio(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
+	void drawCheerio(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, MyMesh* mesh) {
 		GLint loc;
-		setShaders(shader, body);
+		setShaders(shader, mesh);
 		pushMatrix(MODEL);
 		bodyTransformations();
-		drawMesh(body, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		drawMesh(mesh, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
 	}
 
