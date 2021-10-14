@@ -20,6 +20,7 @@ struct DirectionalLight {
 struct SpotLight {
 	vec4 position;
 	vec4 direction;
+	vec3 light_dir;
 	float cutOff;
 };
 
@@ -34,7 +35,7 @@ uniform int spot_on;
 
 in pointLight pointlights[6];
 in DirectionalLight dirlight;
-in SpotLight spotlights;
+in SpotLight spotlights[2];
 
 in vec4 pos;
 
@@ -51,9 +52,12 @@ void main() {
 	vec4 diffuse = vec4(0.0);
 
 	vec3 n = normalize(DataIn.normal);
-	vec3 l = normalize(DataIn.lightDir);
 	vec3 dir_l = normalize(vec3(dirlight.direction));
-	vec3 spot_dir = normalize(vec3(spotlights.direction));
+	vec3 l;
+	vec3 spot_l1 = normalize(spotlights[0].light_dir);
+	vec3 spot_l2 = normalize(spotlights[1].light_dir);
+	vec3 spot_dir1 = normalize(vec3(spotlights[0].direction));
+	vec3 spot_dir2 = normalize(vec3(spotlights[1].direction));
 	vec3 e = normalize(DataIn.eye);
 
 	float dirIntensity = 0.0f;
@@ -69,14 +73,27 @@ void main() {
 	}
 
 	float spotIntensity = 0.0f;
-	spotIntensity = max(dot(n, l), 0.0);
+	spotIntensity = max(dot(n, spot_l1), 0.0);
 	if(spot_on != 0) {
-		if(dot(spot_dir, l) > 0.866) {
+		if(dot(spot_dir1, spot_l1) > spotlights[0].cutOff) {
 			if (spotIntensity > 0.0) {
-				vec3 h = normalize(l + e);
+				vec3 h = normalize(spot_l1 + e);
 				float intSpec = max(dot(h,n), 0.0);
 				spec += mat.specular * pow(intSpec, mat.shininess);
 				diffuse += mat.diffuse * spotIntensity;
+			}
+		}
+	}
+
+	float spotIntensity1 = 0.0f;
+	spotIntensity1 = max(dot(n, spot_l2), 0.0);
+	if(spot_on != 0) {
+		if(dot(spot_dir2, spot_l2) > spotlights[1].cutOff) {
+			if (spotIntensity1 > 0.0) {
+				vec3 h = normalize(spot_l2 + e);
+				float intSpec = max(dot(h,n), 0.0);
+				spec += mat.specular * pow(intSpec, mat.shininess);
+				diffuse += mat.diffuse * spotIntensity1;
 			}
 		}
 	}

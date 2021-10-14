@@ -34,7 +34,8 @@ class Car : public GameObject {
 	float accel = 0;
 	float a = 0;
 
-	Light spotlight;
+	Light spotlight1;
+	Light spotlight2;
 	float spotlight_radius;
 	float body_transformations[16];
 
@@ -44,11 +45,18 @@ public:
         this->body_color = body_color;
         this->tires_color = tires_color;
 		this->accel = accel;
-		spotlight.on = 1;
-		spotlight.direction = vec4(1.0f, 0.0f, 0.0f, 0.0f);
-		spotlight.position = vec4(position.x + car_width / 2 + 0.1f, position.y + 0.3f, position.z, 1.0f);
+		spotlight1.on = 1;
+		spotlight1.direction = vec4(1.0f, 0.0f, 0.0f, 0.0f);
+		spotlight1.position = vec4(car_width / 2 + 0.05f, 0.15f, 0.0f, 1.0f);
+
+		spotlight2.on = 1;
+		spotlight2.direction = vec4(1.0f, 0.0f, 0.0f, 0.0f);
+		spotlight2.position = vec4(car_width / 2 + 0.05f, 0.15f, car_width / 2, 1.0f);
+
+
 		float angle = 15.0f * 3.1415f / 180.0f;
-		spotlight.cut_off = cos(angle);
+		spotlight1.cut_off = cos(angle);
+		spotlight2.cut_off = cos(angle);
 
 		spotlight_radius = car_width / 2 + 0.1f;
     }
@@ -82,6 +90,10 @@ public:
 			setSpeed(std::min(getSpeed() + accel*3 * dt, 0.0f));
 	}
 
+	void turnOnOffLights() {
+		spotlight1.on = !spotlight1.on;
+	}
+
 	void update(float dt) {
 		float speed = getSpeed();
 		float angle = getRotAngle() * M_PI / 180;
@@ -96,8 +108,6 @@ public:
 				count++;
 			}
 		}
-		spotlight.position = vec4(getPosition().x + spotlight_radius*cos(angle), spotlight.position.y + speed_vector.y, getPosition().z + spotlight_radius * sin(-angle), 1.0f);
-		spotlight.direction = vec4(cos(angle), 0, sin(-angle), 0.0f);
 	}
 
 	void createCar() {
@@ -144,8 +154,10 @@ public:
 		float res[4];
 		float res1[4];
 		float res2[4];
-		float lights_pos[4] = { spotlight.position.x, spotlight.position.y, spotlight.position.z, spotlight.position.w };
-		float lights_dir[4] = { spotlight.direction.x, spotlight.direction.y, spotlight.direction.z, 0.0f };
+		float lights_pos1[4] = { spotlight1.position.x, spotlight1.position.y, spotlight1.position.z, spotlight1.position.w };
+		float lights_dir1[4] = { spotlight1.direction.x, spotlight1.direction.y, spotlight1.direction.z, 0.0f };
+		float lights_pos2[4] = { spotlight2.position.x, spotlight2.position.y, spotlight2.position.z, spotlight2.position.w };
+		float lights_dir2[4] = { spotlight2.direction.x, spotlight2.direction.y, spotlight2.direction.z, 0.0f };
 
 		pushMatrix(MODEL);
 		bodyTransformations();
@@ -155,19 +167,35 @@ public:
 			camera->lookAtPoint({ getPosition().x, getPosition().y, getPosition().z }, up);
 		}
 
-		multMatrixPoint(VIEW, lights_dir, res2);
-		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.direction");
-		glUniform4fv(loc, 1, res2);
+		multMatrixPoint(body_transformations, lights_dir1, res);
+		multMatrixPoint(VIEW, res, res1);
+		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].direction");
+		glUniform4fv(loc, 1, res1);
 
-		multMatrixPoint(VIEW, lights_pos, res);   //lightPos definido em World Coord so is converted to eye space
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.position");
-		glUniform4fv(loc, 1, res);
+		multMatrixPoint(body_transformations, lights_pos1, res);
+		multMatrixPoint(VIEW, res, res1);   //lightPos definido em World Coord so is converted to eye space
+		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].position");
+		glUniform4fv(loc, 1, res1);
 
 		loc = glGetUniformLocation(shader.getProgramIndex(), "spot_on");
-		glUniform1i(loc, spotlight.on);
+		glUniform1i(loc, spotlight1.on);
 
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights.cutOff");
-		glUniform1f(loc, spotlight.cut_off);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].cutOff");
+		glUniform1f(loc, spotlight1.cut_off);
+
+
+		multMatrixPoint(body_transformations, lights_dir2, res);
+		multMatrixPoint(VIEW, res, res1);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].direction");
+		glUniform4fv(loc, 1, res1);
+
+		multMatrixPoint(body_transformations, lights_pos2, res);
+		multMatrixPoint(VIEW, res, res1);   //lightPos definido em World Coord so is converted to eye space
+		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].position");
+		glUniform4fv(loc, 1, res1);
+
+		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].cutOff");
+		glUniform1f(loc, spotlight1.cut_off);
 
 		drawMesh(body, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);

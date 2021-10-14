@@ -330,6 +330,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'n': directionalLight.on = !directionalLight.on; break;
+	case 'h': car.turnOnOffLights(); break;
 
 		// Camera keys
 	case '1': current_camera = 0; cameras[current_camera]->setViewPort(WinX, WinY); break;
