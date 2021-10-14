@@ -1,6 +1,8 @@
 #version 330
 
 out vec4 colorOut;
+uniform sampler2D texmap0;
+uniform sampler2D texmap1;
 
 struct Materials {
 	vec4 diffuse;
@@ -39,10 +41,14 @@ in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec2 tex_coord;
 } DataIn;
 
 
 void main() {
+
+	vec4 texel = vec4(1.0); 
+	vec4 texel1 = vec4(1.0);
 
 	vec4 spec = vec4(0.0);
 	vec4 diffuse = vec4(0.0);
@@ -95,6 +101,11 @@ void main() {
 		
 	}
 
-	colorOut = diffuse + spec + mat.ambient;//max((dirIntensity+spotIntensity+pointIntensity) * diffuse + spec, mat.ambient);
+	if(mat.texCount == 1){
+		texel = texture(texmap0, DataIn.tex_coord);
+	}else if(mat.texCount == 2){
+		texel1 = texture(texmap1, DataIn.tex_coord);
+	}
+	colorOut = max((diffuse + spec) * texel * texel1, mat.ambient);//max((dirIntensity+spotIntensity+pointIntensity) * diffuse + spec, mat.ambient);
 
 }

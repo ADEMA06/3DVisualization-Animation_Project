@@ -10,6 +10,9 @@
 // You may use it, or parts of it, wherever you want.
 //
 
+#pragma comment(lib, "DevIL.lib")
+#pragma comment(lib, "ILU.lib")
+
 #include <math.h>
 #include <iostream>
 #include <sstream>
@@ -23,10 +26,14 @@
 // GLUT is the toolkit to interface with the OS
 #include <GL/freeglut.h>
 
+#include <IL/il.h>
+
+
 // Use Very Simple Libs
 #include "VSShaderlib.h"
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
+#include "Texture_Loader.h"
 #include "geometry.h"
 #include "Table.h"
 #include "Car.h"
@@ -104,8 +111,10 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
-
 GLint dir_light_uniformId;
+GLint tex_loc0, tex_loc1;
+GLuint TextureArray[2];
+
 
 // Camera Position
 float camX, camY, camZ;
@@ -214,6 +223,17 @@ void renderScene(void) {
 	}
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+
 
 	//send the light position in eye coordinates
 
@@ -458,7 +478,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 
@@ -466,6 +486,8 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
+	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
@@ -503,7 +525,11 @@ void init()
 	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
 	directionalLight.on = true;
 
+	ilInit();
 
+	glGenTextures(2, TextureArray);
+	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 1);
 
 	road.doNorthRoad(20);
 	road.doEastCurve();
