@@ -7,6 +7,7 @@ uniform mat3 m_normal;
 
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria
+in vec4 texCoord;
 
 uniform vec4 spot_dir;
 
@@ -40,6 +41,7 @@ out Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec2 tex_coord;
 } DataOut;
 
 void main () {
@@ -49,6 +51,7 @@ void main () {
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	//DataOut.lightDir = vec3(uni_spotlights.position - pos);
 	DataOut.eye = vec3(-pos);
+	DataOut.tex_coord = texCoord.st;
 
 	dirlight.direction = -uni_dirlight.direction;
 

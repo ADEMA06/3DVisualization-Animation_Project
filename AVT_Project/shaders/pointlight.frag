@@ -1,6 +1,8 @@
 #version 330
 
 out vec4 colorOut;
+uniform sampler2D texmap0;
+uniform sampler2D texmap1;
 
 struct Materials {
 	vec4 diffuse;
@@ -43,10 +45,14 @@ in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec2 tex_coord;
 } DataIn;
 
 
 void main() {
+
+	vec4 texel = vec4(1.0); 
+	vec4 texel1 = vec4(1.0);
 
 	vec4 spec = vec4(0.0);
 	vec4 diffuse = vec4(0.0);
@@ -116,17 +122,26 @@ void main() {
 		}
 		
 	}
-
 	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
 	float f = exp(-0.1*dist);
 
-	colorOut = diffuse + spec + mat.ambient;
+	if(mat.texCount == 0){
+		colorOut = (diffuse + spec) + mat.ambient;	
+	}
+	else if(mat.texCount == 1){
+		texel = texture(texmap0, DataIn.tex_coord);
+		colorOut = (diffuse + spec) * texel  + mat.ambient;
+	}
+	else if(mat.texCount == 3){
+		texel = texture(texmap0, DataIn.tex_coord);
+		texel1 = texture(texmap1, DataIn.tex_coord);
+		colorOut = (diffuse + spec) * texel * texel1 + mat.ambient;
+	}
+	
+
 	vec3 colorRGB = vec3(colorOut);
 	vec3 fogColor = vec3(0.75, 0.75, 0.75);
 	vec3 finalColor = mix(fogColor, colorRGB, f);
 	
 	colorOut = vec4(vec3(finalColor), mat.diffuse.a);
-
-	//colorOut = vec4(dist, dist, dist, 1.0f);
-
 }
