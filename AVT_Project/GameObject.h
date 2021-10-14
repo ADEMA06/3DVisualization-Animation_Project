@@ -120,6 +120,8 @@ public:
         glUniform4fv(loc, 1, mesh.mat.specular);
         loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
         glUniform1f(loc, mesh.mat.shininess);
+        loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+        glUniform1i(loc, mesh.mat.texCount);
     }
 
     void setShaders(VSShaderLib shader, MyMesh* mesh) {
@@ -132,6 +134,8 @@ public:
         glUniform4fv(loc, 1, mesh->mat.specular);
         loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
         glUniform1f(loc, mesh->mat.shininess);
+        loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+        glUniform1i(loc, mesh->mat.texCount);
     }
 
     void drawMesh(MyMesh mesh, VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
