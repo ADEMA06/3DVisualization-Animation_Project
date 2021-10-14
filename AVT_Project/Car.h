@@ -58,11 +58,11 @@ public:
 	}
 
 	void goForward(float dt) {
-		setSpeed(getSpeed() + accel * dt);
+		setSpeed(std::min(getSpeed() + accel * dt, max_speed));
 	}
 
 	void goBackwards(float dt) {
-		setSpeed(getSpeed() - accel * dt);
+		setSpeed(std::max(getSpeed() - accel * dt, -max_speed));
 	}
 
 	void goLeft(float dt) {

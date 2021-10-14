@@ -74,7 +74,7 @@ Butter butter3(butter_pos3, butter_foil_color);
 //-----------------------------------------
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
-Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
+Car car(car_pos, 2.5f, 10.0f, car_color, color_tire);
 Butter butter(butter_pos, butter_foil_color);
 Orange orange(orange_pos, car_color, color_tire, 1.0f, 15.0f, 0);
 Road road(vec3(0.0f, 0.0f, 0.0f));
@@ -149,7 +149,7 @@ void timer(int value)
 void refresh(int value)
 {
 	glutPostRedisplay();
-	glutTimerFunc(0, refresh, 0);
+	glutTimerFunc(1000/60, refresh, 0);
 }
 
 // ------------------------------------------------------------
@@ -197,7 +197,10 @@ void drawObjects() {
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, car.getPosition());
+	
+	vec3 camera_pos = cameras[2]->getPosition();
+	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
+	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, camera_pos, camera_direction.normalize());
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
@@ -497,7 +500,7 @@ void init()
 	directionalLight.on = 1;
 
 	MyMesh* torus = new MyMesh;
-	float diff1[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
 	torus = new MyMesh(createTorus(0.1, 0.2, 12, 12));
 	memcpy(torus->mat.ambient, amb, 4 * sizeof(float));
 	memcpy(torus->mat.diffuse, diff1, 4 * sizeof(float));
@@ -580,7 +583,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.66f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
 	glEnable(GL_BLEND);
 
 }

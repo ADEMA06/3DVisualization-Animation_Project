@@ -126,11 +126,18 @@ public:
 	}
 
 
-	void draw(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, vec3 car_position) {
+	void draw(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, vec3 camera_position, vec3 camera_direction) {
 		int size = limits.size();
 		for (int i = 0; i < size; i++) {
-			double dist = sqrt(pow(car_position.x - limits.at(i).getPosition().x, 2) + pow(car_position.y - limits.at(i).getPosition().y, 2) + pow(car_position.z - limits.at(i).getPosition().z, 2));
-			if (dist < 40) {
+			double dist = sqrt(pow(camera_position.x - limits.at(i).getPosition().x, 2) + pow(camera_position.y - limits.at(i).getPosition().y, 2) + pow(camera_position.z - limits.at(i).getPosition().z, 2));
+			vec3 pos = limits.at(i).getPosition();
+			vec3 dir = vec3(pos.x - camera_position.x, pos.y - camera_position.y, pos.z - camera_position.z);
+
+			vec3 n_pos = pos.normalize();
+			vec3 n_dir = dir.normalize();
+
+			float dot = camera_direction.dot(n_dir);
+			if (dist < 50 && dot > 0.5) {
 				limits.at(i).drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, this->mesh);
 			}
 		}
