@@ -105,7 +105,7 @@ void main() {
 
 	colorOut = diffuse + spec + mat.ambient;
 	vec3 colorRGB = vec3(colorOut);
-	vec3 fogColor = vec3(0.75, 0.1, 0.1);
+	vec3 fogColor = vec3(0.75, 0.75, 0.75);
 	vec3 finalColor = mix(fogColor, colorRGB, f);
 	
 	colorOut = vec4(vec3(finalColor), mat.diffuse.a);

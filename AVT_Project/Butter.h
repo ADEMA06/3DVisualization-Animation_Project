@@ -32,8 +32,8 @@ public:
 
 	void createButter() {
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-		float foil_diff[] = { foil_color.x, foil_color.y, foil_color.z, foil_color.w };
-		float butter_diff[] = { 0.92f, 0.90f, 0.16f, 0.8f };
+		float foil_diff[] = { foil_color.x, foil_color.y, foil_color.z, 0.2};
+		float butter_diff[] = { 0.92f, 0.90f, 0.16f, 0.2f };
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float shininess = 100.0f;

@@ -54,7 +54,7 @@ public:
 
     void createOrange() {
         float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-        float sphere_diff[] = { sphere_color.x, sphere_color.y, sphere_color.z, sphere_color.w };
+        float sphere_diff[] = { sphere_color.x, sphere_color.y, sphere_color.z, 0.2 };
         float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
         float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
         float shininess = 100.0f;

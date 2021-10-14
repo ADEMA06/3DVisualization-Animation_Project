@@ -76,7 +76,7 @@ Butter butter3(butter_pos3, butter_foil_color);
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
 Butter butter(butter_pos, butter_foil_color);
-Orange orange(orange_pos, car_color, color_tire, 1.0f, 15.0f, 0);
+Orange orange(orange_pos, { 1.0f, 0.65f,0.0f }, color_tire, 1.0f, 15.0f, 0);
 Road road(vec3(0.0f, 0.0f, 0.0f));
 std::vector<Cheerio> cheerios;
 
@@ -195,14 +195,15 @@ void setCameraTarget() {
 
 void drawObjects() {
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
-	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	
 	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, car.getPosition());
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
 	car.update(dt);
 }
@@ -580,7 +581,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.66f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
 	glEnable(GL_BLEND);
 
 }
@@ -624,8 +625,8 @@ int main(int argc, char** argv) {
 	glutReshapeFunc(changeSize);
 
 	glutTimerFunc(0, timer, 0);
-	//glutIdleFunc(renderScene);  // Use it for maximum performance
-	glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
+	glutIdleFunc(renderScene);  // Use it for maximum performance
+	//glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
