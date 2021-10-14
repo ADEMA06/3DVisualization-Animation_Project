@@ -1,6 +1,8 @@
 #version 330
 
 out vec4 colorOut;
+uniform sampler2D texmap0;
+uniform sampler2D texmap1;
 
 struct Materials {
 	vec4 diffuse;
@@ -20,6 +22,7 @@ struct DirectionalLight {
 struct SpotLight {
 	vec4 position;
 	vec4 direction;
+	vec3 light_dir;
 	float cutOff;
 };
 
@@ -34,7 +37,7 @@ uniform int spot_on;
 
 in pointLight pointlights[6];
 in DirectionalLight dirlight;
-in SpotLight spotlights;
+in SpotLight spotlights[2];
 
 in vec4 pos;
 
@@ -42,18 +45,25 @@ in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec2 tex_coord;
 } DataIn;
 
 
 void main() {
 
+	vec4 texel = vec4(1.0); 
+	vec4 texel1 = vec4(1.0);
+
 	vec4 spec = vec4(0.0);
 	vec4 diffuse = vec4(0.0);
 
 	vec3 n = normalize(DataIn.normal);
-	vec3 l = normalize(DataIn.lightDir);
 	vec3 dir_l = normalize(vec3(dirlight.direction));
-	vec3 spot_dir = normalize(vec3(spotlights.direction));
+	vec3 l;
+	vec3 spot_l1 = normalize(spotlights[0].light_dir);
+	vec3 spot_l2 = normalize(spotlights[1].light_dir);
+	vec3 spot_dir1 = normalize(vec3(spotlights[0].direction));
+	vec3 spot_dir2 = normalize(vec3(spotlights[1].direction));
 	vec3 e = normalize(DataIn.eye);
 
 	float dirIntensity = 0.0f;
@@ -69,14 +79,27 @@ void main() {
 	}
 
 	float spotIntensity = 0.0f;
-	spotIntensity = max(dot(n, l), 0.0);
+	spotIntensity = max(dot(n, spot_l1), 0.0);
 	if(spot_on != 0) {
-		if(dot(spot_dir, l) > 0.866) {
+		if(dot(spot_dir1, spot_l1) > spotlights[0].cutOff) {
 			if (spotIntensity > 0.0) {
-				vec3 h = normalize(l + e);
+				vec3 h = normalize(spot_l1 + e);
 				float intSpec = max(dot(h,n), 0.0);
 				spec += mat.specular * pow(intSpec, mat.shininess);
 				diffuse += mat.diffuse * spotIntensity;
+			}
+		}
+	}
+
+	float spotIntensity1 = 0.0f;
+	spotIntensity1 = max(dot(n, spot_l2), 0.0);
+	if(spot_on != 0) {
+		if(dot(spot_dir2, spot_l2) > spotlights[1].cutOff) {
+			if (spotIntensity1 > 0.0) {
+				vec3 h = normalize(spot_l2 + e);
+				float intSpec = max(dot(h,n), 0.0);
+				spec += mat.specular * pow(intSpec, mat.shininess);
+				diffuse += mat.diffuse * spotIntensity1;
 			}
 		}
 	}
@@ -99,17 +122,26 @@ void main() {
 		}
 		
 	}
-
 	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
 	float f = exp(-0.1*dist);
 
-	colorOut = diffuse + spec + mat.ambient;
+	if(mat.texCount == 0){
+		colorOut = (diffuse + spec) + mat.ambient;	
+	}
+	else if(mat.texCount == 1){
+		texel = texture(texmap0, DataIn.tex_coord);
+		colorOut = (diffuse + spec) * texel  + mat.ambient;
+	}
+	else if(mat.texCount == 3){
+		texel = texture(texmap0, DataIn.tex_coord);
+		texel1 = texture(texmap1, DataIn.tex_coord);
+		colorOut = (diffuse + spec) * texel * texel1 + mat.ambient;
+	}
+	
+
 	vec3 colorRGB = vec3(colorOut);
 	vec3 fogColor = vec3(0.75, 0.75, 0.75);
 	vec3 finalColor = mix(fogColor, colorRGB, f);
 	
 	colorOut = vec4(vec3(finalColor), mat.diffuse.a);
-
-	//colorOut = vec4(dist, dist, dist, 1.0f);
-
 }

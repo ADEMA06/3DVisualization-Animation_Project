@@ -43,7 +43,7 @@ public:
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float shininess = 500.0f;
-		int texcount = 0;
+		int texcount = 3;
 		vec3 table_pos = getPosition();
 		base = createCube();
 		base = setMesh(base, amb, diff, spec, emissive, shininess, texcount, table_pos);
@@ -68,6 +68,8 @@ public:
 		glUniform4fv(loc, 1, base.mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, base.mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, base.mat.texCount);
 		pushMatrix(MODEL);
 		translate(MODEL, -width/2, -thickness, -height/2);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
@@ -102,6 +104,8 @@ public:
 			glUniform4fv(loc, 1, legs.at(i).mat.specular);
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 			glUniform1f(loc, legs.at(i).mat.shininess);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+			glUniform1i(loc, base.mat.texCount);
 			pushMatrix(MODEL);
 			translate(MODEL, -legSide/2, -thickness, -legSide/2);
 			translate(MODEL, legs.at(i).position.x, legs.at(i).position.y, legs.at(i).position.z);

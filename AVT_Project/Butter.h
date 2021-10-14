@@ -53,7 +53,7 @@ public:
 
 	void butterFoilTransformations() {
 		translate(MODEL, -butter_width / 2, -butter_height / 2, -butter_thickness / 2);
-		translate(MODEL, getPosition().x - 0.3f, getPosition().y, getPosition().z);
+		translate(MODEL, getPosition().x - 0.3f, getPosition().y, getPosition().z - 0.001f);
 		scale(MODEL, butter_width, butter_height * 1.01f, butter_thickness * 1.01f);
 	}
 

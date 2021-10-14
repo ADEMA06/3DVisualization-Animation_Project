@@ -10,6 +10,9 @@
 // You may use it, or parts of it, wherever you want.
 //
 
+#pragma comment(lib, "DevIL.lib")
+#pragma comment(lib, "ILU.lib")
+
 #include <math.h>
 #include <iostream>
 #include <sstream>
@@ -23,10 +26,14 @@
 // GLUT is the toolkit to interface with the OS
 #include <GL/freeglut.h>
 
+#include <IL/il.h>
+
+
 // Use Very Simple Libs
 #include "VSShaderlib.h"
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
+#include "Texture_Loader.h"
 #include "geometry.h"
 #include "Table.h"
 #include "Car.h"
@@ -74,11 +81,11 @@ Butter butter3(butter_pos3, butter_foil_color);
 //-----------------------------------------
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
-Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
+Car car(car_pos, 2.5f, 10.0f, car_color, color_tire);
 Butter butter(butter_pos, butter_foil_color);
-Orange orange(orange_pos, { 1.0f, 0.65f,0.0f }, color_tire, 1.0f, 15.0f, 0);
 Road road(vec3(0.0f, 0.0f, 0.0f));
 std::vector<Cheerio> cheerios;
+std::vector<Orange> oranges;
 
 vector<Candle> candles;
 
@@ -104,8 +111,10 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
-
 GLint dir_light_uniformId;
+GLint tex_loc0, tex_loc1;
+GLuint TextureArray[2];
+
 
 // Camera Position
 float camX, camY, camZ;
@@ -149,7 +158,7 @@ void timer(int value)
 void refresh(int value)
 {
 	glutPostRedisplay();
-	glutTimerFunc(0, refresh, 0);
+	glutTimerFunc(1000/60, refresh, 0);
 }
 
 // ------------------------------------------------------------
@@ -195,16 +204,22 @@ void setCameraTarget() {
 
 void drawObjects() {
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
+	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	
-	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, car.getPosition());
+	vec3 camera_pos = cameras[2]->getPosition();
+	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
+	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, camera_pos, camera_direction.normalize());
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	orange.drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
-	orange.updatePosition(table_pos, 100.0f, 100.0f, dt);
+
+	for (int i = 0; i < oranges.size(); i++) {
+		oranges.at(i).drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
+	}
+	
 	car.update(dt);
 }
 
@@ -260,6 +275,24 @@ void renderScene(void) {
 	multMatrixPoint(VIEW, lightPos, res);   
 	glUniform4fv(lPos_uniformId, 1, res);
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+
 	int objId = 0;
 	drawObjects();
 	setLights();
@@ -302,6 +335,7 @@ void renderScene(void) {
 
 	update();
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -328,6 +362,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'n': directionalLight.on = !directionalLight.on; break;
+	case 'h': car.turnOnOffLights(); break;
 
 		// Camera keys
 	case '1': current_camera = 0; cameras[current_camera]->setViewPort(WinX, WinY); break;
@@ -452,7 +487,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 
@@ -460,6 +495,8 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
+	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
@@ -497,8 +534,22 @@ void init()
 	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
 	directionalLight.on = 1;
 
+	/* Initialization of DevIL */
+	if (ilGetInteger(IL_VERSION_NUM) < IL_VERSION)
+	{
+		printf("wrong DevIL version \n");
+		exit(0);
+	}
+	ilInit();
+
+	//Texture Object definition
+
+	glGenTextures(2, TextureArray);
+	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 1);
+
 	MyMesh* torus = new MyMesh;
-	float diff1[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
 	torus = new MyMesh(createTorus(0.1, 0.2, 12, 12));
 	memcpy(torus->mat.ambient, amb, 4 * sizeof(float));
 	memcpy(torus->mat.diffuse, diff1, 4 * sizeof(float));
@@ -546,13 +597,28 @@ void init()
 
 	table.createTable();
 	car.createCar();
-	orange.createOrange();
 	butter.createButter();
 	butter1.createButter();
 	butter2.createButter();
 	butter3.createButter();
 
-	
+	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
+	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
+	Orange orange3(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
+	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
+	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
+
+	orange1.createOrange();
+	orange2.createOrange();
+	orange3.createOrange();
+	orange4.createOrange();
+	orange5.createOrange();
+
+	oranges.push_back(orange1);
+	oranges.push_back(orange2);
+	oranges.push_back(orange3);
+	oranges.push_back(orange4);
+	oranges.push_back(orange5);
 
 	MyMesh amesh;
 	float height = 10.0f;
