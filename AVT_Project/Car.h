@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include "GameObject.h"
+#include "AABB.h"
 #include <sstream>
 #include <string>
 #include "geometry.h"
@@ -32,7 +33,7 @@ class Car : public GameObject {
     vec4 body_color;
     vec4 tires_color;
 	float accel = 0;
-	float a = 0;
+	AABB bounding_box;
 
 	Light spotlight1;
 	Light spotlight2;
@@ -45,6 +46,11 @@ public:
         this->body_color = body_color;
         this->tires_color = tires_color;
 		this->accel = accel;
+
+		vec3 min_pos = vec3(getPosition().x - car_width / 2, getPosition().y - car_height / 2, getPosition().z - car_thickness / 2);
+		vec3 max_pos = vec3(getPosition().x + car_width / 2, getPosition().y + car_height / 2, getPosition().z + car_thickness / 2);
+		bounding_box = AABB(min_pos, max_pos);
+
 		spotlight1.on = 1;
 		spotlight1.direction = vec4(1.0f, 0.0f, 0.0f, 0.0f);
 		spotlight1.position = vec4(car_width / 2 + 0.05f, 0.15f, 0.0f, 1.0f);
@@ -75,12 +81,10 @@ public:
 
 	void goLeft(float dt) {
 		setRotAngle(getRotAngle() + 50.0f * dt);
-		float angle = getRotAngle() * M_PI / 180;
 	}
 
 	void goRight(float dt) {
 		setRotAngle(getRotAngle() - 50.0f * dt);
-		float angle = getRotAngle() * M_PI / 180;
 	}
 
 	void stop(float dt) {
@@ -100,6 +104,7 @@ public:
 		vec3 position = getPosition();
 		vec3 speed_vector = vec3(speed * cos(angle) * dt, 0.0f, speed * sin(-angle) * dt);
 		setPosition(position + speed_vector);
+		this->bounding_box.updateAABB(speed_vector);
 		int count = 0;
 		for (int i = -1; i <= 1; i += 2) {
 			for (int j = -1; j <= 1; j += 2) {
@@ -129,6 +134,14 @@ public:
 				amesh = setMesh(amesh, amb, tires_diff, spec, emissive, shininess, texcount, position);
 				tires.push_back(amesh);
 			}
+		}
+	}
+
+	void checkCollision(AABB collision) {
+		if (this->bounding_box.checkCollision(collision)) {
+			//TODO: push away the car from the collided object
+			this->accel = 0;
+			this->setSpeed(0);
 		}
 	}
 
