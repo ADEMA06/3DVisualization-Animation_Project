@@ -133,7 +133,6 @@ public:
 			vec3 pos = limits.at(i).getPosition();
 			vec3 dir = vec3(pos.x - camera_position.x, pos.y - camera_position.y, pos.z - camera_position.z);
 
-			vec3 n_pos = pos.normalize();
 			vec3 n_dir = dir.normalize();
 
 			float dot = camera_direction.dot(n_dir);

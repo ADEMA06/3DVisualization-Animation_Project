@@ -22,12 +22,16 @@ extern float mNormal3x3[9];
 class Butter : GameObject {
     struct MyMesh butter_body;
     struct MyMesh butter_foil;
+	AABB bounding_box;
     vec4 foil_color;
 
 
 public:
     Butter(vec3 position, vec4 foil_color) : GameObject(position) {
         this->foil_color = foil_color;
+		vec3 min_pos = vec3(getPosition().x - butter_width / 2, getPosition().y - butter_height / 2, getPosition().z - butter_thickness / 2);
+		vec3 max_pos = vec3(getPosition().x + butter_width / 2, getPosition().y + butter_height / 2, getPosition().z + butter_thickness / 2);
+		bounding_box = AABB(min_pos, max_pos);
     }
 
 	void createButter() {
@@ -70,6 +74,10 @@ public:
 		butterFoilTransformations();
 		drawMesh(butter_foil, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
+	}
+
+	AABB getBoundingBox() {
+		return this->bounding_box;
 	}
 };
 

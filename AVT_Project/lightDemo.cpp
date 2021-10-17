@@ -221,6 +221,7 @@ void drawObjects() {
 	}
 	
 	car.update(dt);
+	car.checkCollision(butter.getBoundingBox());
 }
 
 void setLights() {
@@ -277,18 +278,9 @@ void renderScene(void) {
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);	
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
@@ -296,7 +288,7 @@ void renderScene(void) {
 	int objId = 0;
 	drawObjects();
 	setLights();
-	update();
+
 	for (int i = 0; i < 3; ++i) {
 
 		// send the material
