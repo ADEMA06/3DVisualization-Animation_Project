@@ -19,16 +19,23 @@ class Cheerio : public GameObject {
 	struct MyMesh* body;
 	vec4 body_color;
 	vec3 position;
+	AABB bounding_box;
 
 public:
 	Cheerio(vec3 position, vec4 body_color) : GameObject(position) {
 		this->body_color = body_color;
+		vec3 min_pos = vec3(getPosition().x - 0.2, getPosition().y, getPosition().z - 0.2);
+		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2);
+		bounding_box = AABB(min_pos, max_pos);
 	}
 
 	Cheerio(vec3 position, vec4 body_color, MyMesh* mesh) : GameObject(position) {
 		this->body_color = body_color;
 		body = mesh;
 		this->position = position;
+		vec3 min_pos = vec3(getPosition().x - 0.2, getPosition().y, getPosition().z - 0.2);
+		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2); 
+		bounding_box = AABB(min_pos, max_pos);
 	}
 
 	/*void createCheerio() {
@@ -56,6 +63,12 @@ public:
 		drawMesh(mesh, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
 	}
+
+
+	AABB getBoundingBox() {
+		return this->bounding_box;
+	}
+
 
 };
 

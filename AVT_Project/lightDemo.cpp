@@ -81,7 +81,7 @@ Butter butter3(butter_pos3, butter_foil_color);
 //-----------------------------------------
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
-Car car(car_pos, 2.5f, 10.0f, car_color, color_tire);
+Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
 Butter butter(butter_pos, butter_foil_color);
 Road road(vec3(0.0f, 0.0f, 0.0f));
 std::vector<Cheerio> cheerios;
@@ -203,6 +203,15 @@ void setCameraTarget() {
 }
 
 void drawObjects() {
+	car.update(dt);
+
+	car.checkCollision(butter.getBoundingBox());
+
+	for (auto const& cheerio : road.getVisible()) {
+		if (car.checkCollision(cheerio->getBoundingBox())) {
+			cheerio->setPosition(vec3(0.0f, 0.0f, 0.0f));
+		}
+	}
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	
@@ -220,8 +229,7 @@ void drawObjects() {
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
 	
-	car.update(dt);
-	car.checkCollision(butter.getBoundingBox());
+	
 }
 
 void setLights() {

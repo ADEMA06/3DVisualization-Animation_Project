@@ -6,6 +6,7 @@
 class AABB{
     std::vector<vec3> vertices;
     vec3 min_pos, max_pos;
+    bool colliding;
 
 public:
     AABB(){}
@@ -21,6 +22,7 @@ public:
         vertices.push_back({ max_pos.x, min_pos.y, max_pos.z });
         vertices.push_back({ min_pos.x, max_pos.y, max_pos.z });
         vertices.push_back(max_pos);
+        colliding = false;
         
     }
 
@@ -65,6 +67,14 @@ public:
     
     vec3 getMaxPos() {
         return this->max_pos;
+    }
+
+    bool isColliding() {
+        return this->colliding;
+    }
+
+    void setColliding(bool val) {
+        this->colliding = val;
     }
 
 };

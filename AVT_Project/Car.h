@@ -39,6 +39,8 @@ class Car : public GameObject {
 	Light spotlight2;
 	float spotlight_radius;
 	float body_transformations[16];
+	float cam_transformations[16];
+	vec3 offset;
 
 public:
     Car(vec3 position, float accel, float max_speed, vec4 body_color, vec4 tires_color) : GameObject(position) {
@@ -103,16 +105,17 @@ public:
 		float angle = getRotAngle() * M_PI / 180;
 		vec3 position = getPosition();
 		vec3 speed_vector = vec3(speed * cos(angle) * dt, 0.0f, speed * sin(-angle) * dt);
+		offset = speed_vector;
 		setPosition(position + speed_vector);
 		this->bounding_box.updateAABB(speed_vector);
 		int count = 0;
-		for (int i = -1; i <= 1; i += 2) {
+		/*for (int i = -1; i <= 1; i += 2) {
 			for (int j = -1; j <= 1; j += 2) {
 				vec3 position = getPosition() + vec3(car_width / 2 * i + 0.25f * (-i), 0.0f, car_height / 2 * j);
 				tires.at(count).position = position;
 				count++;
 			}
-		}
+		}*/
 	}
 
 	void createCar() {
@@ -130,35 +133,40 @@ public:
 		for (int i = -1; i <= 1; i += 2) {
 			for (int j = -1; j <= 1; j += 2) {
 				amesh = createTorus(0.05f, 0.25f, 20, 50);
-				vec3 position = car_pos + vec3(car_width/2*i + 0.25f*(-i), 0.0f, car_height/2*j);
+				vec3 position = vec3(car_width/2*i + 0.25f*(-i), 0.0f, car_height/2*j);
 				amesh = setMesh(amesh, amb, tires_diff, spec, emissive, shininess, texcount, position);
 				tires.push_back(amesh);
 			}
 		}
 	}
 
-	void checkCollision(AABB collision) {
+	bool checkCollision(AABB collision) {
 		if (this->bounding_box.checkCollision(collision)) {
-			//TODO: push away the car from the collided object
-			this->accel = 0;
+			this->setPosition(this->getPosition() - offset);
+			this->bounding_box.updateAABB(vec3(offset.x*-1, offset.y*-1, offset.z*-1));
 			this->setSpeed(0);
+			return true;
 		}
+		return false;
 	}
 
 	void bodyTransformations() {
 		setIdentityMatrix(body_transformations);
+		setIdentityMatrix(cam_transformations);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
 		rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
-		translate(MODEL, -car_width / 2, 0.25, -car_height / 2);
 		multMatrix(body_transformations, get(MODEL));
+		translate(MODEL, -car_width / 2, 0.25, -car_height / 2);
+		multMatrix(cam_transformations, get(MODEL));
 		scale(MODEL, car_width, car_thickness, car_height);
 	}
 
 	void tireTransformations(int i) {
 		vec3 position = getPosition();
-		translate(MODEL, position.x, position.y,position.z);
-		rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
-		translate(MODEL, tires.at(i).position.x-position.x, tires.at(i).position.y + 0.25f - position.y, tires.at(i).position.z - position.z);
+		//translate(MODEL, position.x, position.y,position.z);
+		multMatrix(MODEL, body_transformations);
+		//rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
+		translate(MODEL, tires.at(i).position.x, tires.at(i).position.y + 0.25f, tires.at(i).position.z);
 		rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
 	}
 
@@ -175,17 +183,17 @@ public:
 		pushMatrix(MODEL);
 		bodyTransformations();
 		vec3 up(0, 1, 0);
-		camera->setTransformations(body_transformations);
+		camera->setTransformations(cam_transformations);
 		if (current_camera == 2) {
 			camera->lookAtPoint({ getPosition().x, getPosition().y, getPosition().z }, up);
 		}
 
-		multMatrixPoint(body_transformations, lights_dir1, res);
+		multMatrixPoint(cam_transformations, lights_dir1, res);
 		multMatrixPoint(VIEW, res, res1);
 		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].direction");
 		glUniform4fv(loc, 1, res1);
 
-		multMatrixPoint(body_transformations, lights_pos1, res);
+		multMatrixPoint(cam_transformations, lights_pos1, res);
 		multMatrixPoint(VIEW, res, res1);   //lightPos definido em World Coord so is converted to eye space
 		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].position");
 		glUniform4fv(loc, 1, res1);
@@ -197,12 +205,12 @@ public:
 		glUniform1f(loc, spotlight1.cut_off);
 
 
-		multMatrixPoint(body_transformations, lights_dir2, res);
+		multMatrixPoint(cam_transformations, lights_dir2, res);
 		multMatrixPoint(VIEW, res, res1);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].direction");
 		glUniform4fv(loc, 1, res1);
 
-		multMatrixPoint(body_transformations, lights_pos2, res);
+		multMatrixPoint(cam_transformations, lights_pos2, res);
 		multMatrixPoint(VIEW, res, res1);   //lightPos definido em World Coord so is converted to eye space
 		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].position");
 		glUniform4fv(loc, 1, res1);
