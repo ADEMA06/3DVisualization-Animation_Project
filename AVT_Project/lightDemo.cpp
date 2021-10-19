@@ -206,6 +206,17 @@ void drawObjects() {
 	car.update(dt);
 
 	car.checkCollision(butter.getBoundingBox());
+	for (int i = 0; i < oranges.size(); i++) {
+		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
+			car.setPosition({1.0f, 0.0f, 1.0f});
+			car.setRotation({ 0.0f, 0.0f, 0.0f });
+			car.setSpeed(0);
+			car.setDirAngle(0);
+			car.setRotAngle(0);
+			car.resetBoundingBox();
+		}
+	}
+	
 
 	for (auto const& cheerio : road.getVisible()) {
 		if (car.checkCollision(cheerio->getBoundingBox())) {
@@ -608,17 +619,21 @@ void init()
 	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
 	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
 
+	Orange orange6({10, 0, 0}, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 0.0f, 0);
+
 	orange1.createOrange();
 	orange2.createOrange();
 	orange3.createOrange();
 	orange4.createOrange();
 	orange5.createOrange();
+	orange6.createOrange();
 
 	oranges.push_back(orange1);
 	oranges.push_back(orange2);
 	oranges.push_back(orange3);
 	oranges.push_back(orange4);
 	oranges.push_back(orange5);
+	oranges.push_back(orange6);
 
 	MyMesh amesh;
 	float height = 10.0f;

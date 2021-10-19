@@ -29,19 +29,28 @@ public:
         this->radius = radius;
 		this->is_moving = true;
 
+		vec3 min_pos = vec3(getPosition().x - radius, getPosition().y - radius, getPosition().z - radius);
+		vec3 max_pos = vec3(getPosition().x + radius, getPosition().y + radius, getPosition().z + radius);
+		setBoundingBox(min_pos, max_pos);
+		 
 		this->dirRotation = std::atan(speed*cos(getDirAngle()) / speed*sin(getDirAngle()));
     }
 
 	void updatePosition(vec3 tablePos, float tableWidth, float tableHeight, float dt) {
 		setRotAngle(getRotAngle() + rotationSpeed() * dt);
-		setPosition(getPosition() + vec3(getSpeed()*cos(getDirAngle())*dt, 0, getSpeed() * sin(getDirAngle()) * dt));
+		vec3 speed_vector = vec3(getSpeed() * cos(getDirAngle()) * dt, 0, getSpeed() * sin(getDirAngle()) * dt);
+		setPosition(getPosition() + speed_vector);
 		int offset[2] = { -1, 1 };
+		updateBoundingBox(speed_vector);
 		if (getPosition().x > tablePos.x + tableWidth / 2 || getPosition().x < tablePos.x - tableWidth / 2 || getPosition().z > tablePos.z + tableHeight / 2 || getPosition().z < tablePos.z - tableHeight / 2) {
 			int j = rand() % 2;
 			vec3 position = vec3(offset[j] * rand() % ((int)tableWidth/2), 0.0f, offset[j] * (rand() % ((int)tableHeight/2)));
 			int angle = rand() % 360;
 			setDirAngle(angle);
 			setPosition(position);
+			vec3 min_pos = vec3(getPosition().x - radius / 2, getPosition().y - radius / 2, getPosition().z - radius / 2);
+			vec3 max_pos = vec3(getPosition().x + radius / 2, getPosition().y + radius / 2, getPosition().z + radius / 2);
+			setBoundingBox(min_pos, max_pos);
 		}
 	}
 
@@ -113,6 +122,10 @@ public:
 		drawMesh(stalk, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
 		//-----------------------------------------
+	}
+
+	AABB getBoundingBox() {
+		return GameObject::getBoundingBox();
 	}
 };
 

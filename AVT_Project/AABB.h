@@ -32,7 +32,7 @@ public:
             (this->min_pos.z <= bounding_box.max_pos.z && this->max_pos.z >= bounding_box.min_pos.z));
     }
 
-    void updateAABB(vec3 offset) {
+    void updateBoundingBox(vec3 offset) {
         for (auto& vertex : vertices) {
             vertex = vertex + offset;
         }

@@ -3,6 +3,7 @@
 
 #include <GL/freeglut.h>
 #include "vec.h"
+#include "AABB.h"
 
 /// The storage for matrices
 extern float mMatrix[COUNT_MATRICES][16];
@@ -19,6 +20,7 @@ class GameObject {
     float speed = 0;
     float rotAngle = 0;
     float dirAngle = 0;
+    AABB bounding_box;
  
 
 public:
@@ -108,6 +110,22 @@ public:
         amesh->position = position;
 
         return amesh;
+    }
+
+    void setBoundingBox(vec3 min_pos, vec3 max_pos) {
+        this->bounding_box = AABB(min_pos, max_pos);
+    }
+
+    void updateBoundingBox(vec3 offset) {
+        this->bounding_box.updateBoundingBox(offset);
+    }
+    
+    AABB getBoundingBox() {
+        return this->bounding_box;
+    }
+
+    bool checkCollision(AABB otherBoundingBox) {
+        return this->bounding_box.checkCollision(otherBoundingBox);
     }
 
     void setShaders(VSShaderLib shader, MyMesh mesh) {
