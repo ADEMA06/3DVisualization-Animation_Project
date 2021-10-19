@@ -63,7 +63,7 @@ float camera_angle_xz = M_PI;
 vec3 table_pos(0.0f, 0.0f, 0.0f);
 
 vec3 car_pos(1.0f, 0.0f, 1.0f);
-vec3 butter_pos(5.0f, 0.5f, 0.0f);
+vec3 butter_pos(5.0f, 0.0f, 0.0f);
 vec4 car_color(1.0f, 1.0f, 1.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
 vec4 cheerio_color(1.0f, 0.874f, 0.0f, 1.0f);
@@ -205,7 +205,6 @@ void setCameraTarget() {
 void drawObjects() {
 	car.update(dt);
 
-	car.checkCollision(butter.getBoundingBox());
 	for (int i = 0; i < oranges.size(); i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
@@ -230,19 +229,15 @@ void drawObjects() {
 		cheerio->update(dt);
 	}
 
-	bool x = car.checkCollision(butter.getBoundingBox());
-
-	if (x) {
-		float angle = car.getRotAngle() * M_PI / 180;
+	if (car.checkCollision(butter.getBoundingBox())) {
 		vec3 butter_pos = butter.getPosition();
 		vec3 car_pos = car.getPosition();
 		vec3 dir = (butter_pos - car_pos).normalize();
 		butter.setSpeed(1.1f);
 		butter.setAccel(-1.0f);
 		butter.setCollidingSpeed(dir * butter.getSpeed());
-		x = 1;
 	}
-
+	
 	butter.update(dt);
 
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);

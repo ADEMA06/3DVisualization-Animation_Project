@@ -147,7 +147,6 @@ public:
 	bool checkCollision(AABB collision) {
 
 		if (GameObject::checkCollision(collision)) {
-			printf("collided car \n");
 			this->setPosition(this->getPosition() - offset);
 			updateBoundingBox(vec3(offset.x*-1, offset.y*-1, offset.z*-1));
 			this->setSpeed(0);

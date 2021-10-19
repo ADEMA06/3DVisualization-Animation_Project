@@ -33,6 +33,7 @@ public:
 		vec3 min_pos = vec3(getPosition().x - butter_width / 2, getPosition().y - butter_height / 2, getPosition().z - butter_thickness / 2);
 		vec3 max_pos = vec3(getPosition().x + butter_width / 2, getPosition().y + butter_height / 2, getPosition().z + butter_thickness / 2);
 		setBoundingBox(min_pos, max_pos);
+		accel = 0;
 
 	}
 
@@ -52,13 +53,13 @@ public:
 	}
 
 	void butterBodyTransformations() {
-		translate(MODEL, -butter_width / 2, -butter_height / 2, -butter_thickness / 2);
+		translate(MODEL, -butter_width / 2, 0, -butter_thickness / 2);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
 		scale(MODEL, butter_width, butter_height, butter_thickness);
 	}
 
 	void butterFoilTransformations() {
-		translate(MODEL, -butter_width / 2, -butter_height / 2, -butter_thickness / 2);
+		translate(MODEL, -butter_width / 2, 0, -butter_thickness / 2);
 		translate(MODEL, getPosition().x - 0.3f, getPosition().y, getPosition().z - 0.001f);
 		scale(MODEL, butter_width, butter_height * 1.01f, butter_thickness * 1.01f);
 	}
