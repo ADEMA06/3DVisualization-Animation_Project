@@ -19,12 +19,15 @@ class Cheerio : public GameObject {
 	struct MyMesh* body;
 	vec4 body_color;
 	vec3 position;
+	float accel;
+	vec3 colliding_speed;
 
 public:
 	Cheerio(vec3 position, vec4 body_color) : GameObject(position) {
 		this->body_color = body_color;
 		vec3 min_pos = vec3(getPosition().x - 0.2, getPosition().y, getPosition().z - 0.2);
 		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2);
+		accel = 0.0f;
 		setBoundingBox(min_pos, max_pos);
 	}
 
@@ -33,7 +36,8 @@ public:
 		body = mesh;
 		this->position = position;
 		vec3 min_pos = vec3(getPosition().x - 0.2, getPosition().y, getPosition().z - 0.2);
-		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2); 
+		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2);
+		accel = 0.0f;
 		setBoundingBox(min_pos, max_pos);
 	}
 
@@ -61,6 +65,30 @@ public:
 		bodyTransformations();
 		drawMesh(mesh, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
+	}
+
+	void update(float dt) {
+		colliding_speed = colliding_speed + colliding_speed.normalize() * accel * dt;
+		setSpeed(getSpeed() + accel * dt);
+		if (getSpeed() > 0) {
+			vec3 offset = colliding_speed * dt;
+			updateBoundingBox(offset);
+			setPosition(getPosition() + offset);
+		}
+			
+		else {
+			setSpeed(0.0f);
+			accel = 0;
+			colliding_speed = vec3(0.0f, 0.0f, 0.0f);
+		}	
+	}
+
+	void setCollidingSpeed(vec3 col_speed) {
+		colliding_speed = col_speed;
+	}
+
+	void setAccel(float a) {
+		accel = a;
 	}
 
 

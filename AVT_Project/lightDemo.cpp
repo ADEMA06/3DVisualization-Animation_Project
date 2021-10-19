@@ -220,9 +220,17 @@ void drawObjects() {
 
 	for (auto const& cheerio : road.getVisible()) {
 		if (car.checkCollision(cheerio->getBoundingBox())) {
-			cheerio->setPosition(vec3(0.0f, 0.0f, 0.0f));
+			float angle = car.getRotAngle() * M_PI / 180;
+			vec3 cheerio_pos = cheerio->getPosition();
+			vec3 car_pos = car.getPosition();
+			vec3 dir = (cheerio_pos - car_pos).normalize();
+			cheerio->setSpeed(1.1f);
+			cheerio->setAccel(-1.0f);
+			cheerio->setCollidingSpeed(dir * cheerio->getSpeed());
 		}
+		cheerio->update(dt);
 	}
+
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	
@@ -566,7 +574,7 @@ void init()
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
-	torus = new MyMesh(createTorus(0.1, 0.2, 12, 12));
+	torus = new MyMesh(createTorus(0.2, 0.4, 20, 20));
 	memcpy(torus->mat.ambient, amb, 4 * sizeof(float));
 	memcpy(torus->mat.diffuse, diff1, 4 * sizeof(float));
 	memcpy(torus->mat.specular, spec, 4 * sizeof(float));
