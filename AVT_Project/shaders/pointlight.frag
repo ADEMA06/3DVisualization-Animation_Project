@@ -3,6 +3,7 @@
 out vec4 colorOut;
 uniform sampler2D texmap0;
 uniform sampler2D texmap1;
+uniform sampler2D texmap2;
 
 struct Materials {
 	vec4 diffuse;
@@ -130,6 +131,10 @@ void main() {
 	}
 	else if(mat.texCount == 1){
 		texel = texture(texmap0, DataIn.tex_coord);
+		colorOut = (diffuse + spec) * texel  + mat.ambient;
+	}
+	else if(mat.texCount == 2){
+		texel = texture(texmap2, DataIn.tex_coord);
 		colorOut = (diffuse + spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 3){

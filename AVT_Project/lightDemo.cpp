@@ -112,8 +112,8 @@ GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint dir_light_uniformId;
-GLint tex_loc0, tex_loc1;
-GLuint TextureArray[2];
+GLint tex_loc0, tex_loc1, tex_loc2;
+GLuint TextureArray[3];
 
 
 // Camera Position
@@ -240,7 +240,6 @@ void drawObjects() {
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
 	
-	
 }
 
 void setLights() {
@@ -301,8 +300,12 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);	
 
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
 
 	int objId = 0;
 	drawObjects();
@@ -508,6 +511,7 @@ GLuint setupShaders() {
 	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
+	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
@@ -555,9 +559,10 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(2, TextureArray);
+	glGenTextures(3, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 1);
+	Texture2D_Loader(TextureArray, "orange.jpg", 2);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -619,21 +624,17 @@ void init()
 	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
 	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
 
-	Orange orange6({10, 0, 0}, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 0.0f, 0);
-
 	orange1.createOrange();
 	orange2.createOrange();
 	orange3.createOrange();
 	orange4.createOrange();
 	orange5.createOrange();
-	orange6.createOrange();
 
 	oranges.push_back(orange1);
 	oranges.push_back(orange2);
 	oranges.push_back(orange3);
 	oranges.push_back(orange4);
 	oranges.push_back(orange5);
-	oranges.push_back(orange6);
 
 	MyMesh amesh;
 	float height = 10.0f;

@@ -67,13 +67,14 @@ public:
         float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
         float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
         float shininess = 100.0f;
-        int texcount = 0;
+        int texcount = 2;
         vec3 sphere_pos = getPosition() +  vec3(0,radius,0);
         sphere = createSphere(radius, 100);
         sphere = setMesh(sphere, amb, sphere_diff, spec, emissive, shininess, texcount, sphere_pos);
 		sphere.rotAngle = 10.0f;
         float stalk_diff[] = { stalk_color.x, stalk_color.y, stalk_color.z, stalk_color.w };
         vec3 stalk_pos = sphere_pos + vec3(0, radius, 0);
+		texcount = 0;
         stalk = createCylinder(radius/2, 0.1f, 20);
         stalk = setMesh(stalk, amb, stalk_diff, spec, emissive, shininess, texcount, stalk_pos);
     }
