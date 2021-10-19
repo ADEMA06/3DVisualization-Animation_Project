@@ -217,12 +217,11 @@ void drawObjects() {
 		}
 	}
 	
-
+	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
 		if (car.checkCollision(cheerio->getBoundingBox())) {
 			float angle = car.getRotAngle() * M_PI / 180;
 			vec3 cheerio_pos = cheerio->getPosition();
-			vec3 car_pos = car.getPosition();
 			vec3 dir = (cheerio_pos - car_pos).normalize();
 			cheerio->setSpeed(1.1f);
 			cheerio->setAccel(-1.0f);
@@ -230,6 +229,21 @@ void drawObjects() {
 		}
 		cheerio->update(dt);
 	}
+
+	bool x = car.checkCollision(butter.getBoundingBox());
+
+	if (x) {
+		float angle = car.getRotAngle() * M_PI / 180;
+		vec3 butter_pos = butter.getPosition();
+		vec3 car_pos = car.getPosition();
+		vec3 dir = (butter_pos - car_pos).normalize();
+		butter.setSpeed(1.1f);
+		butter.setAccel(-1.0f);
+		butter.setCollidingSpeed(dir * butter.getSpeed());
+		x = 1;
+	}
+
+	butter.update(dt);
 
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
 	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);

@@ -19,10 +19,12 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 /// The normal matrix
 extern float mNormal3x3[9];
 
-class Butter : GameObject {
+class Butter : public GameObject {
     struct MyMesh butter_body;
     struct MyMesh butter_foil;
     vec4 foil_color;
+	float accel;
+	vec3 colliding_speed;
 
 
 public:
@@ -31,6 +33,7 @@ public:
 		vec3 min_pos = vec3(getPosition().x - butter_width / 2, getPosition().y - butter_height / 2, getPosition().z - butter_thickness / 2);
 		vec3 max_pos = vec3(getPosition().x + butter_width / 2, getPosition().y + butter_height / 2, getPosition().z + butter_thickness / 2);
 		setBoundingBox(min_pos, max_pos);
+
 	}
 
 	void createButter() {
@@ -74,6 +77,31 @@ public:
 		drawMesh(butter_foil, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
 	}
+
+	void update(float dt) {
+		colliding_speed = colliding_speed + colliding_speed.normalize() * accel * dt;
+		setSpeed(getSpeed() + accel * dt);
+		if (getSpeed() > 0) {
+			vec3 offset = colliding_speed * dt;
+			updateBoundingBox(offset);
+			setPosition(getPosition() + offset);
+		}
+
+		else {
+			setSpeed(0.0f);
+			accel = 0;
+			colliding_speed = vec3(0.0f, 0.0f, 0.0f);
+		}
+	}
+
+	void setCollidingSpeed(vec3 col_speed) {
+		colliding_speed = col_speed;
+	}
+
+	void setAccel(float a) {
+		accel = a;
+	}
+
 
 	AABB getBoundingBox() {
 		return GameObject::getBoundingBox();
