@@ -16,7 +16,7 @@ class Orange : public GameObject {
     struct MyMesh sphere;
     vec4 sphere_color;
     vec4 stalk_color;
-    int speed_level;
+    float speed_level;
     float radius;
 	float dirRotation;
 	bool is_moving;
@@ -24,7 +24,7 @@ class Orange : public GameObject {
 
 public:
     Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, float speed, float dirAngle) : GameObject(position, speed, dirAngle) {
-        this->speed_level = 0;
+        this->speed_level = 1;
         this->sphere_color = sphere_color;
         this->stalk_color = stalk_color;
         this->radius = radius;
@@ -53,6 +53,13 @@ public:
 			vec3 max_pos = vec3(getPosition().x + radius / 2, getPosition().y + radius / 2, getPosition().z + radius / 2);
 			setBoundingBox(min_pos, max_pos);
 		}
+	}
+
+	void updateSpeed(int t) {
+		setSpeed(getSpeed() / speed_level);
+		speed_level = std::min(((float)t / 100000) + 1, 2.0f);
+		printf("%f\n", speed_level);
+		setSpeed(getSpeed() * speed_level);
 	}
 
 	float rotationSpeed() {

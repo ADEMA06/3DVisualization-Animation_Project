@@ -57,6 +57,7 @@ unsigned int FrameCount = 0;
 bool keys[256] = { false };
 
 int pointLights_on = 1;
+int t;
 
 float camera_angle_xz = M_PI;
 
@@ -245,6 +246,7 @@ void drawObjects() {
 	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 
 	for (int i = 0; i < oranges.size(); i++) {
+		oranges.at(i).updateSpeed(t);
 		oranges.at(i).drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
@@ -282,7 +284,7 @@ void setLights() {
 //
 
 void renderScene(void) {
-	int t = glutGet(GLUT_ELAPSED_TIME);
+	t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
 
@@ -631,11 +633,11 @@ void init()
 	car.createCar();
 	butter.createButter();
 
-	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
-	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
-	Orange orange3(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
-	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
-	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
+	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);
+	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 6.0f, 0);
+	Orange orange3(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 7.0f, 0);
+	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 6.0f, 0);
+	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);
 
 	orange1.createOrange();
 	orange2.createOrange();
