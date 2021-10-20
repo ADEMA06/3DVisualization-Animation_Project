@@ -720,8 +720,8 @@ int main(int argc, char** argv) {
 	glutReshapeFunc(changeSize);
 
 	glutTimerFunc(0, timer, 0);
-	glutIdleFunc(renderScene);  // Use it for maximum performance
-	//glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
+	//glutIdleFunc(renderScene);  // Use it for maximum performance
+	glutTimerFunc(1000 / 60, refresh, 0);    //use it to to get 60 FPS whatever
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
