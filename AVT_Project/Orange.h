@@ -20,6 +20,7 @@ class Orange : public GameObject {
     float radius;
 	float dirRotation;
 	bool is_moving;
+	float orange_transformations[16];
 
 public:
     Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, float speed, float dirAngle) : GameObject(position, speed, dirAngle) {
@@ -80,20 +81,10 @@ public:
     }
 
 	void sphereTransformations() {
+		setIdentityMatrix(orange_transformations);
 		translate(MODEL, getPosition().x, getPosition().y + radius, getPosition().z);
-		rotate(MODEL, getRotAngle(), 0.0f, 0.0f, 1.0f);
-		translate(MODEL, 0, 0, 0);
-	}
-
-	void stalkTransformations() {
-		translate(MODEL, getPosition().x, getPosition().y + radius, getPosition().z);
-
-		//Logica da rotacao da laranja
-		//Pego no vetor da velocidade, encontro um vetor perpendicular no mesmo plano, esse vai ser o eixo de rotacao,
-		//e simplesmente faco o rotae com o rotAngle nesse eixo. So tem o caso limite quando rodas 90 graus para cima,
-		//o que e meio weird
 		float speed_scalar = getSpeed();
-		vec3 speed = vec3(speed_scalar*cos(getDirAngle()), 0.0f, speed_scalar*sin(getDirAngle()));
+		vec3 speed = vec3(speed_scalar * cos(getDirAngle()), 0.0f, speed_scalar * sin(getDirAngle()));
 		float mag = sqrt(speed.x * speed.x + speed.y * speed.y + speed.z * speed.z);
 
 		speed.x /= mag;
@@ -104,6 +95,12 @@ public:
 		res.y = speed.z * 0.0f - 0.0f * speed.x;
 		res.z = speed.x * 1.0f - 0.0f * speed.y;
 		rotate(MODEL, -getRotAngle(), res.x, res.y, res.z);
+		multMatrix(orange_transformations, get(MODEL));
+		translate(MODEL, 0, 0, 0);
+	}
+
+	void stalkTransformations() {
+		multMatrix(MODEL, orange_transformations);
 		translate(MODEL, 0, radius, 0);
 	}
 

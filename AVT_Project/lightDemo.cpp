@@ -71,14 +71,6 @@ vec4 butter_foil_color(0.0f, 0.0f, 0.9f, 1.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
-//-----------------------------------------
-vec3 butter_pos1(5.0f, 0.0f, 0.0f);
-vec3 butter_pos2(5.0f, 0.0f, 0.5f);
-vec3 butter_pos3(5.0f, 0.5f, 0.5f);
-Butter butter1(butter_pos1, butter_foil_color);
-Butter butter2(butter_pos2, butter_foil_color);
-Butter butter3(butter_pos3, butter_foil_color);
-//-----------------------------------------
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
@@ -245,7 +237,7 @@ void drawObjects() {
 	
 	vec3 camera_pos = cameras[2]->getPosition();
 	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
-	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, camera_pos, camera_direction.normalize());
+	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, camera_pos, camera_direction.normalize(), current_camera == 2);
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
@@ -328,7 +320,7 @@ void renderScene(void) {
 	drawObjects();
 	setLights();
 
-	for (int i = 0; i < 3; ++i) {
+	/*for (int i = 0; i < 3; ++i) {
 
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -362,7 +354,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 		objId++;
-	}
+	}*/
 
 	update();
 
@@ -593,15 +585,22 @@ void init()
 
 	road.setMesh(torus);
 
-	road.doNorthRoad(40);
+	road.doNorthRoad(25);
 	road.doEastCurve();
-	road.doEastRoad(30);
+	road.doEastRoad(20);
+	road.doSouthCurve();
+	road.doSouthRoad(50);
+	road.doWestSouthCurve();
+	road.doWestRoad(50);
+	road.doNorthWestCurve();
+	road.doNorthRoad(60);
+	road.doEastCurve();
+	road.doEastRoad(60);
 	road.doSouthCurve();
 	road.doSouthRoad(70);
 	road.doWestSouthCurve();
 	road.doWestRoad(70);
-	road.doNorthWestCurve();
-	road.doNorthRoad(80);
+	road.finishLine();
 
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };
@@ -631,9 +630,6 @@ void init()
 	table.createTable();
 	car.createCar();
 	butter.createButter();
-	butter1.createButter();
-	butter2.createButter();
-	butter3.createButter();
 
 	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
 	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 15.0f, 0);
@@ -696,7 +692,7 @@ int main(int argc, char** argv) {
 
 
 	//	Camera initialization	
-	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f*WinY/WinX, -55.0f*WinY / WinX);
+	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f, -55.0f);
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
 	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
 

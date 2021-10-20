@@ -172,6 +172,7 @@
     <ClInclude Include="Candle.h" />
     <ClInclude Include="Car.h" />
     <ClInclude Include="Cheerio.h" />
+    <ClInclude Include="Flag.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Orange.h" />

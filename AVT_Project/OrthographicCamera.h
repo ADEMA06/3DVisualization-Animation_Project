@@ -19,6 +19,8 @@ public:
 	}
 
 	void setViewPort(int w, int h) {
+		top_plane = right_plane * float(h) / float(w);
+		bottom_plane = left_plane * float(h) / float(w);
 		// Prevent a divide by zero, when window is too short
 		if (h == 0)
 			h = 1;
