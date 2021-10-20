@@ -14,6 +14,7 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 
 /// The normal matrix
 extern float mNormal3x3[9];
+float outer_radius = 0.4;
 
 class Cheerio : public GameObject {
 	struct MyMesh* body;
@@ -25,8 +26,8 @@ class Cheerio : public GameObject {
 public:
 	Cheerio(vec3 position, vec4 body_color) : GameObject(position) {
 		this->body_color = body_color;
-		vec3 min_pos = vec3(getPosition().x - 0.2, getPosition().y, getPosition().z - 0.2);
-		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2);
+		vec3 min_pos = vec3(getPosition().x - outer_radius, getPosition().y, getPosition().z - outer_radius);
+		vec3 max_pos = vec3(getPosition().x + outer_radius, getPosition().y, getPosition().z + outer_radius);
 		accel = 0.0f;
 		setBoundingBox(min_pos, max_pos);
 	}
@@ -35,8 +36,8 @@ public:
 		this->body_color = body_color;
 		body = mesh;
 		this->position = position;
-		vec3 min_pos = vec3(getPosition().x - 0.2, getPosition().y, getPosition().z - 0.2);
-		vec3 max_pos = vec3(getPosition().x + 0.2, getPosition().y, getPosition().z + 0.2);
+		vec3 min_pos = vec3(getPosition().x - outer_radius, getPosition().y, getPosition().z - outer_radius);
+		vec3 max_pos = vec3(getPosition().x + outer_radius, getPosition().y, getPosition().z + outer_radius);
 		accel = 0.0f;
 		setBoundingBox(min_pos, max_pos);
 	}

@@ -593,15 +593,15 @@ void init()
 
 	road.setMesh(torus);
 
-	road.doNorthRoad(20);
+	road.doNorthRoad(40);
 	road.doEastCurve();
 	road.doEastRoad(30);
-	road.doNorthCurve();
-	road.doNorthRoad(15);
-	road.doWestCurve();
-	road.doWestRoad(70);
 	road.doSouthCurve();
-	road.doSouthRoad(80);
+	road.doSouthRoad(70);
+	road.doWestSouthCurve();
+	road.doWestRoad(70);
+	road.doNorthWestCurve();
+	road.doNorthRoad(80);
 
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };
