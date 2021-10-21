@@ -234,7 +234,6 @@ void drawObjects() {
 	butter.update(dt);
 
 	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
-	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	
 	vec3 camera_pos = cameras[2]->getPosition();
 	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
@@ -250,6 +249,8 @@ void drawObjects() {
 		oranges.at(i).drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
+	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+
 	
 }
 
@@ -322,7 +323,7 @@ void renderScene(void) {
 	drawObjects();
 	setLights();
 
-	for (int i = 0; i < 3; ++i) {
+	/*for (int i = 0; i < 3; ++i) {
 
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -356,7 +357,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 		objId++;
-	}
+	}*/
 
 	update();
 
