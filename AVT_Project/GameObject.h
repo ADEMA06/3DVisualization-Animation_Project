@@ -24,6 +24,7 @@ class GameObject {
  
 
 public:
+    GameObject() {}
 
     GameObject(vec3 position) {
         this->position = position;
@@ -118,6 +119,10 @@ public:
 
     void updateBoundingBox(vec3 offset) {
         this->bounding_box.updateBoundingBox(offset);
+    }
+
+    void updateBoundingBox(float* transformations) {
+        this->bounding_box.updateBoundingBox(transformations);
     }
     
     AABB getBoundingBox() {

@@ -32,6 +32,7 @@ class Car : public GameObject {
     vec4 body_color;
     vec4 tires_color;
 	float accel = 0;
+	float rot_offset = 0;
 
 	Light spotlight1;
 	Light spotlight2;
@@ -47,8 +48,8 @@ public:
         this->tires_color = tires_color;
 		this->accel = accel;
 
-		vec3 min_pos = vec3(getPosition().x - car_width / 2, getPosition().y - car_height / 2, getPosition().z - car_thickness / 2);
-		vec3 max_pos = vec3(getPosition().x + car_width / 2, getPosition().y + car_height / 2, getPosition().z + car_thickness / 2);
+		vec3 min_pos = vec3(-car_width / 2, -car_height / 2, -car_thickness / 2);
+		vec3 max_pos = vec3(car_width / 2, car_height / 2, car_thickness / 2);
 		setBoundingBox(min_pos, max_pos);
 
 		spotlight1.on = 1;
@@ -65,6 +66,9 @@ public:
 		spotlight2.cut_off = cos(angle);
 
 		spotlight_radius = car_width / 2 + 0.1f;
+
+		setIdentityMatrix(body_transformations);
+		setIdentityMatrix(cam_transformations);
     }
 
 	float* getBodyTransformations() {
@@ -72,8 +76,8 @@ public:
 	}
 
 	void resetBoundingBox(){
-		vec3 min_pos = vec3(getPosition().x - car_width / 2, getPosition().y - car_height / 2, getPosition().z - car_thickness / 2);
-		vec3 max_pos = vec3(getPosition().x + car_width / 2, getPosition().y + car_height / 2, getPosition().z + car_thickness / 2);
+		vec3 min_pos = vec3(- car_width / 2, - car_height / 2, - car_thickness / 2);
+		vec3 max_pos = vec3(car_width / 2, car_height / 2, car_thickness / 2);
 		setBoundingBox(min_pos, max_pos);
 	}
 
@@ -86,11 +90,15 @@ public:
 	}
 
 	void goLeft(float dt) {
+		rot_offset = getRotAngle();
 		setRotAngle(getRotAngle() + 50.0f * dt);
+		rot_offset = getRotAngle() - rot_offset;
 	}
 
 	void goRight(float dt) {
+		rot_offset = getRotAngle();
 		setRotAngle(getRotAngle() - 50.0f * dt);
+		rot_offset = getRotAngle() - rot_offset;
 	}
 
 	void stop(float dt) {
@@ -107,11 +115,14 @@ public:
 	void update(float dt) {
 		float speed = getSpeed();
 		float angle = getRotAngle() * M_PI / 180;
+		float angle_offset = rot_offset * M_PI / 180;
 		vec3 position = getPosition();
 		vec3 speed_vector = vec3(speed * cos(angle) * dt, 0.0f, speed * sin(-angle) * dt);
 		offset = speed_vector;
 		setPosition(position + speed_vector);
-		updateBoundingBox(speed_vector);
+		updateBoundingBox(body_transformations);
+
+
 		int count = 0;
 		/*for (int i = -1; i <= 1; i += 2) {
 			for (int j = -1; j <= 1; j += 2) {
@@ -142,6 +153,8 @@ public:
 				tires.push_back(amesh);
 			}
 		}
+
+		//getBoundingBox().setMesh(body);
 	}
 
 	bool checkCollision(AABB collision) {
@@ -170,9 +183,8 @@ public:
 
 	void tireTransformations(int i) {
 		vec3 position = getPosition();
-		//translate(MODEL, position.x, position.y,position.z);
 		multMatrix(MODEL, body_transformations);
-		//rotate(MODEL, getRotAngle(), 0.0f, 1.0f, 0.0f);
+		
 		translate(MODEL, tires.at(i).position.x, tires.at(i).position.y + 0.25f, tires.at(i).position.z);
 		rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
 	}

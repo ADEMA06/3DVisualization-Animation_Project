@@ -322,7 +322,7 @@ void renderScene(void) {
 	drawObjects();
 	setLights();
 
-	/*for (int i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -356,7 +356,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 		objId++;
-	}*/
+	}
 
 	update();
 

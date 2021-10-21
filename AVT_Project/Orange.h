@@ -21,6 +21,7 @@ class Orange : public GameObject {
 	float dirRotation;
 	bool is_moving;
 	float orange_transformations[16];
+	float countdown = 0;
 
 public:
     Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, float speed, float dirAngle) : GameObject(position, speed, dirAngle) {
@@ -38,6 +39,7 @@ public:
     }
 
 	void updatePosition(vec3 tablePos, float tableWidth, float tableHeight, float dt) {
+		countdown = std::max(countdown - dt, 0.0f);
 		setRotAngle(getRotAngle() + rotationSpeed() * dt);
 		vec3 speed_vector = vec3(getSpeed() * cos(getDirAngle()) * dt, 0, getSpeed() * sin(getDirAngle()) * dt);
 		setPosition(getPosition() + speed_vector);
@@ -51,6 +53,7 @@ public:
 			setPosition(position);
 			vec3 min_pos = vec3(getPosition().x - radius / 2, getPosition().y - radius / 2, getPosition().z - radius / 2);
 			vec3 max_pos = vec3(getPosition().x + radius / 2, getPosition().y + radius / 2, getPosition().z + radius / 2);
+			countdown = 2.0f;
 			setBoundingBox(min_pos, max_pos);
 		}
 	}
@@ -115,7 +118,9 @@ public:
 		setShaders(shader, sphere);
 		pushMatrix(MODEL);
 		sphereTransformations();
-		drawMesh(sphere, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		if (countdown == 0) {
+			drawMesh(sphere, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		}
 		popMatrix(MODEL);
 		//-----------------------------------------
 		
@@ -123,7 +128,9 @@ public:
 		setShaders(shader, stalk);
 		pushMatrix(MODEL);
 		stalkTransformations();
-		drawMesh(stalk, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		if (countdown == 0) {
+			drawMesh(stalk, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		}
 		popMatrix(MODEL);
 		//-----------------------------------------
 	}

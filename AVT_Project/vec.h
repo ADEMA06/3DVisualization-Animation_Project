@@ -44,6 +44,11 @@ struct vec3 {
         return acos(d / m);
     }
 
+    float* asArray() {
+        float res[4] = { x, y, z, 1.0f };
+        return res;
+    }
+
     friend vec3 operator+(const vec3& lvalue, const vec3& rvalue) {
         vec3 res;
         res.x = lvalue.x + rvalue.x;
