@@ -2,46 +2,50 @@
 #define __ORANGE_H__
 
 #define _USE_MATH_DEFINES
-#include "GameObject.h"
-#include <sstream>
+#include "MovableObject.h"
 #include <string>
-#include "geometry.h"
-#include "AVTmathLib.h"
-#include "VSShaderlib.h"
+#include "MeshBuilder.h"
 #include <random>
-#include <cmath>
 
-class Orange : public GameObject {
+class Orange : public MovableObject {
+	//Meshes and mesh details
     struct MyMesh stalk;
     struct MyMesh sphere;
     vec4 sphere_color;
     vec4 stalk_color;
-    int speed_level;
+
+	//Speed increase level
+    int speed_level = 1;
+
+	//Radius
     float radius;
-	float dirRotation;
-	bool is_moving;
+
+	//Angle in which the angl is rotated around itself
+	float own_axis_angle;
+
+	//Orange transformation matrix
 	float orange_transformations[16];
+
+	//Cooldown after leaving table
 	float countdown = 0;
 
 public:
-    Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, float speed, float dirAngle) : GameObject(position, speed, dirAngle) {
-        this->speed_level = 1;
+    Orange(vec3 position, vec4 sphere_color, vec4 stalk_color, float radius, float speed, float direction_angle) : MovableObject(position, speed, direction_angle) {
         this->sphere_color = sphere_color;
         this->stalk_color = stalk_color;
         this->radius = radius;
-		this->is_moving = true;
 
 		vec3 min_pos = vec3(getPosition().x - radius, getPosition().y - radius, getPosition().z - radius);
 		vec3 max_pos = vec3(getPosition().x + radius, getPosition().y + radius, getPosition().z + radius);
 		setBoundingBox(min_pos, max_pos);
 		 
-		this->dirRotation = std::atan(speed*cos(getDirAngle()) / speed*sin(getDirAngle()));
+		this->own_axis_angle = std::atan(speed*cos(own_axis_angle) / speed*sin(own_axis_angle));
     }
 
 	void updatePosition(vec3 tablePos, float tableWidth, float tableHeight, float dt) {
 		countdown = std::max(countdown - dt, 0.0f);
-		setRotAngle(getRotAngle() + rotationSpeed() * dt);
-		vec3 speed_vector = vec3(getSpeed() * cos(getDirAngle()) * dt, 0, getSpeed() * sin(getDirAngle()) * dt);
+		own_axis_angle += rotationSpeed() * dt;
+		vec3 speed_vector = getSpeedVector(dt);
 		setPosition(getPosition() + speed_vector);
 		int offset[2] = { -1, 1 };
 		updateBoundingBox(speed_vector);
@@ -49,7 +53,7 @@ public:
 			int j = rand() % 2;
 			vec3 position = vec3(offset[j] * rand() % ((int)tableWidth/2), 0.0f, offset[j] * (rand() % ((int)tableHeight/2)));
 			int angle = rand() % 360;
-			setDirAngle(angle);
+			setDirectionAngle(angle);
 			setPosition(position);
 			vec3 min_pos = vec3(getPosition().x - radius / 2, getPosition().y - radius / 2, getPosition().z - radius / 2);
 			vec3 max_pos = vec3(getPosition().x + radius / 2, getPosition().y + radius / 2, getPosition().z + radius / 2);
@@ -65,13 +69,15 @@ public:
 	}
 
 	float rotationSpeed() {
-		float speedIntensity = std::sqrt(std::pow(getSpeed()*cos(getRotAngle()), 2) + std::pow(0, 2) + std::pow(getSpeed()*sin(getRotAngle()), 2));
+		float speedIntensity = std::sqrt(std::pow(getSpeed()*cos(getDirectionAngle()), 2) + std::pow(getSpeed()*sin(getDirectionAngle()), 2));
 		return (speedIntensity*57.29 / radius);
 	}
 
 	
 
     void createOrange() {
+		MeshBuilder builder;
+
         float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
         float sphere_diff[] = { sphere_color.x, sphere_color.y, sphere_color.z, 0.6f };
         float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -80,30 +86,24 @@ public:
         int texcount = 2;
         vec3 sphere_pos = getPosition() +  vec3(0,radius,0);
         sphere = createSphere(radius, 100);
-        sphere = setMesh(sphere, amb, sphere_diff, spec, emissive, shininess, texcount, sphere_pos);
-		sphere.rotAngle = 10.0f;
+        sphere = builder.setMesh(sphere, amb, sphere_diff, spec, emissive, shininess, texcount, sphere_pos);
         float stalk_diff[] = { stalk_color.x, stalk_color.y, stalk_color.z, stalk_color.w };
         vec3 stalk_pos = sphere_pos + vec3(0, radius, 0);
 		texcount = 0;
         stalk = createCylinder(radius/2, 0.1f, 20);
-        stalk = setMesh(stalk, amb, stalk_diff, spec, emissive, shininess, texcount, stalk_pos);
+        stalk = builder.setMesh(stalk, amb, stalk_diff, spec, emissive, shininess, texcount, stalk_pos);
     }
 
 	void sphereTransformations() {
 		setIdentityMatrix(orange_transformations);
 		translate(MODEL, getPosition().x, getPosition().y + radius, getPosition().z);
 		float speed_scalar = getSpeed();
-		vec3 speed = vec3(speed_scalar * cos(getDirAngle()), 0.0f, speed_scalar * sin(getDirAngle()));
-		float mag = sqrt(speed.x * speed.x + speed.y * speed.y + speed.z * speed.z);
-
-		speed.x /= mag;
-		speed.y /= mag;
-		speed.z /= mag;
+		vec3 speed = getSpeedVector(1.0f).normalize();
 		vec3 res;
 		res.x = speed.y * 0.0f - 1.0f * speed.z;
 		res.y = speed.z * 0.0f - 0.0f * speed.x;
 		res.z = speed.x * 1.0f - 0.0f * speed.y;
-		rotate(MODEL, -getRotAngle(), res.x, res.y, res.z);
+		rotate(MODEL, -own_axis_angle, res.x, res.y, res.z);
 		multMatrix(orange_transformations, get(MODEL));
 		translate(MODEL, 0, 0, 0);
 	}
@@ -114,12 +114,13 @@ public:
 	}
 
 	void drawOrange(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
+		MeshBuilder builder;
 		//----------------Sphere-------------------
-		setShaders(shader, sphere);
+		builder.setShaders(shader, sphere);
 		pushMatrix(MODEL);
 		sphereTransformations();
 		if (countdown == 0) {
-			drawMesh(sphere, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+			builder.drawMesh(sphere, shader);
 		}
 		popMatrix(MODEL);
 		//-----------------------------------------
@@ -129,7 +130,7 @@ public:
 		pushMatrix(MODEL);
 		stalkTransformations();
 		if (countdown == 0) {
-			drawMesh(stalk, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+			builder.drawMesh(stalk, shader);
 		}
 		popMatrix(MODEL);
 		//-----------------------------------------

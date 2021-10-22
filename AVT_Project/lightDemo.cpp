@@ -201,10 +201,8 @@ void drawObjects() {
 	for (int i = 0; i < oranges.size(); i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
-			car.setRotation({ 0.0f, 0.0f, 0.0f });
-			car.setSpeed(0);
-			car.setDirAngle(0);
-			car.setRotAngle(0);
+			car.setSpeed(0.0f);
+			car.setDirectionAngle(0.0f);
 			car.resetBoundingBox();
 		}
 	}
@@ -212,7 +210,7 @@ void drawObjects() {
 	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
 		if (car.checkCollision(cheerio->getBoundingBox())) {
-			float angle = car.getRotAngle() * M_PI / 180;
+			float angle = car.getDirectionAngle() * M_PI / 180;
 			vec3 cheerio_pos = cheerio->getPosition();
 			vec3 dir = (cheerio_pos - car_pos).normalize();
 			cheerio->setSpeed(1.1f);
