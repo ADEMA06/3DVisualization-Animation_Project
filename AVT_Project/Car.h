@@ -234,7 +234,7 @@ public:
 		//---------------------------------------------------------------------------------------------------
 	}
 
-	void drawCar(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, Camera* camera) {
+	void drawCar(VSShaderLib shader, Camera* camera) {
 		MeshBuilder builder;
 		builder.setShaders(shader, body);
 

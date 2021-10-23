@@ -92,8 +92,9 @@ public:
     void setShadersInstances(VSShaderLib shader, std::vector<vec3> offsets) {
         for (int i = 0; i < offsets.size(); i++) {
             std::string instance_str = "offsets[" + std::to_string(i) + "]";
-            GLint loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-            glUniform3fv(loc, 1, offsets.at(i).asArray());
+            GLint loc = glGetUniformLocation(shader.getProgramIndex(), instance_str.c_str());
+            offsets.at(i).y += 0.1;
+            glUniform3fv(loc, 1, offsets.at(i).asArray3());
         }
     }
     /*-----------------------------------------------------------------------------------------*/

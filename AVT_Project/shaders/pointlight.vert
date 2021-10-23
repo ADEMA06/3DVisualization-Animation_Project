@@ -4,8 +4,8 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
-int instanced;
-uniform vec3 offsets[500];
+uniform int instanced;
+uniform vec3 offsets[908];
 
 
 in vec4 position;
@@ -49,7 +49,12 @@ out Data {
 
 void main () {
 
-	pos = m_viewModel * position;
+	vec4 new_pos = position;
+
+	if(instanced == 1) {
+		new_pos = vec4(vec3(position) + vec3(offsets[gl_InstanceID]), 1.0f);
+	}
+	pos = m_viewModel * new_pos;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	//DataOut.lightDir = vec3(uni_spotlights.position - pos);
@@ -72,5 +77,5 @@ void main () {
 		pointlights[i].lightDir = vec3(uni_pointlights[i].position - pos);
 	}
 
-	gl_Position = m_pvm * position;	
+	gl_Position = m_pvm * new_pos;	
 }

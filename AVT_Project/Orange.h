@@ -113,7 +113,7 @@ public:
 		translate(MODEL, 0, radius, 0);
 	}
 
-	void drawOrange(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId) {
+	void drawOrange(VSShaderLib shader) {
 		MeshBuilder builder;
 		//----------------Sphere-------------------
 		builder.setShaders(shader, sphere);
