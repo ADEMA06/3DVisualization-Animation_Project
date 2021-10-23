@@ -43,7 +43,10 @@ struct vec3 {
         }
         return acos(d / m);
     }
-
+    float* asArray3() {
+        float res[3] = { x, y, z };
+        return res;
+    }
     float* asArray() {
         float res[4] = { x, y, z, 1.0f };
         return res;

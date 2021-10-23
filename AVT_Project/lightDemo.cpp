@@ -201,10 +201,8 @@ void drawObjects() {
 	for (int i = 0; i < oranges.size(); i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
-			car.setRotation({ 0.0f, 0.0f, 0.0f });
-			car.setSpeed(0);
-			car.setDirAngle(0);
-			car.setRotAngle(0);
+			car.setSpeed(0.0f);
+			car.setDirectionAngle(0.0f);
 			car.resetBoundingBox();
 		}
 	}
@@ -212,44 +210,33 @@ void drawObjects() {
 	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
 		if (car.checkCollision(cheerio->getBoundingBox())) {
-			float angle = car.getRotAngle() * M_PI / 180;
-			vec3 cheerio_pos = cheerio->getPosition();
-			vec3 dir = (cheerio_pos - car_pos).normalize();
-			cheerio->setSpeed(1.1f);
-			cheerio->setAccel(-1.0f);
-			cheerio->setCollidingSpeed(dir * cheerio->getSpeed());
+			cheerio->collision_reaction(car_pos, 1.1f, -1.0f);
 		}
 		cheerio->update(dt);
 	}
 
 	if (car.checkCollision(butter.getBoundingBox())) {
-		vec3 butter_pos = butter.getPosition();
-		vec3 car_pos = car.getPosition();
-		vec3 dir = (butter_pos - car_pos).normalize();
-		butter.setSpeed(1.1f);
-		butter.setAccel(-1.0f);
-		butter.setCollidingSpeed(dir * butter.getSpeed());
+		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
-	
 	butter.update(dt);
 
-	car.drawCar(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, cameras[2]);
+	car.drawCar(shader, cameras[2]);
 	
 	vec3 camera_pos = cameras[2]->getPosition();
 	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
-	road.draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, camera_pos, camera_direction.normalize(), current_camera == 2);
+	road.draw(shader, camera_pos, camera_direction.normalize(), current_camera == 2);
 
 	for (int i = 0; i < candles.size(); i++) {
-		candles.at(i).drawCandle(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		candles.at(i).drawCandle(shader);
 	}
-	table.drawTable(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	table.drawTable(shader);
 
 	for (int i = 0; i < oranges.size(); i++) {
 		oranges.at(i).updateSpeed(t);
-		oranges.at(i).drawOrange(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		oranges.at(i).drawOrange(shader);
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
-	butter.drawButter(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+	butter.drawButter(shader);
 
 	
 }
