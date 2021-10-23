@@ -4,6 +4,9 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
+int instanced;
+uniform vec3 offsets[500];
+
 
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria

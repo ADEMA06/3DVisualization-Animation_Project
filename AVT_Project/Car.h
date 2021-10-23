@@ -97,11 +97,13 @@ public:
 	}
 
 	void goLeft(float dt) {
-		setDirectionAngle(getDirectionAngle() + 50.0f * dt);
+		if(getSpeed() != 0)
+			setDirectionAngle(getDirectionAngle() + 50.0f * dt);
 	}
 
 	void goRight(float dt) {
-		setDirectionAngle(getDirectionAngle() - 50.0f * dt);
+		if (getSpeed() != 0)
+			setDirectionAngle(getDirectionAngle() - 50.0f * dt);
 	}
 
 	void stop(float dt) {

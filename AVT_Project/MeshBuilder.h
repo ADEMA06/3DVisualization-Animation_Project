@@ -69,6 +69,8 @@ public:
         glUniform1f(loc, mesh->mat.shininess);
         loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
         glUniform1i(loc, mesh->mat.texCount);
+        loc = glGetUniformLocation(shader.getProgramIndex(), "instanced");
+        glUniform1i(loc, 1);
     }
 
 	void setShaders(VSShaderLib shader, MyMesh mesh) {
@@ -83,7 +85,17 @@ public:
         glUniform1f(loc, mesh.mat.shininess);
         loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
         glUniform1i(loc, mesh.mat.texCount);
+        loc = glGetUniformLocation(shader.getProgramIndex(), "instanced");
+        glUniform1i(loc, 0);
 	}
+
+    void setShadersInstances(VSShaderLib shader, std::vector<vec3> offsets) {
+        for (int i = 0; i < offsets.size(); i++) {
+            std::string instance_str = "offsets[" + std::to_string(i) + "]";
+            GLint loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+            glUniform3fv(loc, 1, offsets.at(i).asArray());
+        }
+    }
     /*-----------------------------------------------------------------------------------------*/
 
     /*-------------------------------------------------------------------------------------------
@@ -125,6 +137,26 @@ public:
         }
 
         glDrawElements(mesh->type, mesh->numIndexes, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    void drawMeshInstanced(MyMesh* mesh, VSShaderLib shader, int n_instances) {
+        // send matrices to OGL
+        computeDerivedMatrix(PROJ_VIEW_MODEL);
+        glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+        glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+        computeNormalMatrix3x3();
+        glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+        // Render mesh
+        glBindVertexArray(mesh->vao);
+
+        if (!shader.isProgramValid()) {
+            printf("Program Not Valid!\n");
+            exit(1);
+        }
+
+        glDrawElementsInstanced(mesh->type, mesh->numIndexes, GL_UNSIGNED_INT, 0, n_instances);
         glBindVertexArray(0);
     }
     /*------------------------------------------------------------------------------------*/
