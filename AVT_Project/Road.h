@@ -189,7 +189,7 @@ public:
 
 			}
 		}
-		builder.setShaders(shader, mesh);
+		builder.setShaders(shader, mesh, 1);
 		builder.setShadersInstances(shader, offsets);
 		pushMatrix(MODEL);
 		builder.drawMeshInstanced(mesh, shader, offsets.size());

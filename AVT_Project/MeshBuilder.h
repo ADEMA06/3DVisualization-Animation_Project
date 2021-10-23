@@ -57,7 +57,7 @@ public:
     /*----------------------------------------------------------------------------------------------
     Sets shader variables with mesh attributes 
     */
-    void setShaders(VSShaderLib shader, MyMesh* mesh) {
+    void setShaders(VSShaderLib shader, MyMesh* mesh, int instanced = 0) {
         GLint loc;
         loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
         glUniform4fv(loc, 1, mesh->mat.ambient);
@@ -70,7 +70,7 @@ public:
         loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
         glUniform1i(loc, mesh->mat.texCount);
         loc = glGetUniformLocation(shader.getProgramIndex(), "instanced");
-        glUniform1i(loc, 1);
+        glUniform1i(loc, instanced);
     }
 
 	void setShaders(VSShaderLib shader, MyMesh mesh) {
