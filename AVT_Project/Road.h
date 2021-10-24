@@ -97,17 +97,14 @@ public:
 			direction.z = 0.0f;
 		}
 
-		float processed_x = direction.x;
-		float processed_z = direction.z;
 
-		printf("%f\n", direction.x);
 		vec3 curve_right = vec3(abs(direction.x) == 1.0f ? last_pos.x - direction.x * width / 2 : last_pos.x - direction.z * width, height_t, abs(direction.z) == 1.0f ? last_pos.z - direction.z * width / 2 : last_pos.z + direction.x * width);
 		for (int i = 0; i < 6; i++) {
 			Cheerio* c = new Cheerio(curve_right + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
 
-		printf("%f\n", direction.z);
+
 		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? 2.5 * direction.x : 2.5 * initial_x, 0, abs(direction.z) == 1.0f ? 2.5 * direction.z : 2.5 * initial_z) + direction;
 	}
 
