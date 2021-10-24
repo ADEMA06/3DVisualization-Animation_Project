@@ -15,150 +15,106 @@ class Road {
 	std::vector<Cheerio*> limits;
 	std::list<Cheerio*> visible;
 	Flag* flag;
+	vec3 direction;
 
 public:
 	Road(vec3 initial_pos) {
 		last_pos = initial_pos;
+		direction = vec3(1.0f, 0.0f, 0.0f);
 	}
 
 	void setMesh(MyMesh* mesh) {
 		this->mesh = mesh;
 	}
 
-	void doNorthRoad(int length) {
+	void doRoad(int length) {
 		for (int i = 0; i < length; i++) {
-			Cheerio* c1 = new Cheerio({ float(i) + last_pos.x, 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			Cheerio* c2 = new Cheerio({ float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+			Cheerio* c1 = new Cheerio(vec3(abs(direction.z) == 1.0f ? last_pos.x - width / 2 : last_pos.x , height_t, abs(direction.x) == 1.0f ? last_pos.z - width / 2 : last_pos.z) + direction*float(i),
+				vec4(1.0f, 0.874f, 0.0f, 1.0f));
+			Cheerio* c2 = new Cheerio(vec3(abs(direction.z) == 1.0f ? last_pos.x + width / 2 : last_pos.x, height_t, abs(direction.x) == 1.0f ? last_pos.z + width / 2 : last_pos.z) + direction*float(i),
+				vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c1);
 			limits.push_back(c2);
 		}
-		last_pos = last_pos + vec3(length, 0, 0);
+		last_pos = last_pos + direction * length;
 	}
 
-	void doNorthCurve() {
+	void doRightCurve() {
+
+		float initial_x = direction.x;
+		float initial_z = direction.z;
+
+		vec3 curve_front = vec3(direction.x == 1.0f ? last_pos.x : last_pos.x + direction.z * width / 2, height_t, direction.z == 1.0f ? last_pos.z : last_pos.z - direction.x * width/2);
 		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ last_pos.x - width / 2 , 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+			Cheerio* c = new Cheerio(curve_front + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
-		Cheerio* c1 = new Cheerio({ last_pos.x + width / 2, 0, float(last_pos.z) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+		vec3 smth = vec3(direction.x == 1.0f ? last_pos.x : last_pos.x - direction.z * width / 2, height_t, direction.z == 1.0f ? last_pos.z : last_pos.z + direction.x * width / 2);
+		Cheerio* c1 = new Cheerio(smth, vec4(1.0f, 0.874f, 0.0f, 1.0f));
 		limits.push_back(c1);
-		Cheerio* c2 = new Cheerio({ last_pos.x + width / 2, 0, float(last_pos.z + 1) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c2);
+
+		if (abs(direction.x) == 1.0f) {
+			direction.z = direction.x;
+			direction.x = 0.0f;
+		}
+		else if (abs(direction.z) == 1.0f) {
+			direction.x = -direction.z;
+			direction.z = 0.0f;
+		}
+		
+		vec3 curve_right = vec3(abs(direction.x) == 1.0f ? last_pos.x - direction.x * width/2: last_pos.x + direction.z * width, height_t, abs(direction.z) == 1.0f ? last_pos.z - direction.z * width/2 : last_pos.z  - direction.x * width);
 		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ float(i) + last_pos.x - 2.5f, 0, last_pos.z + 6 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+			Cheerio* c = new Cheerio(curve_right + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
-		last_pos = last_pos + vec3(3.5, 0, 3.5);
+
+
+		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? 2.5 * direction.x : 2.5 * initial_x, 0, abs(direction.z) == 1.0f ? 2.5 * direction.z: 2.5 * initial_z) + direction;
 	}
 
-	void doNorthWestCurve() {
+	void doLeftCurve() {
+
+		float initial_x = direction.x;
+		float initial_z = direction.z;
+
+
+		vec3 curve_front = vec3(direction.x == 1.0f ? last_pos.x : last_pos.x - direction.z * width / 2, height_t, direction.z == 1.0f ? last_pos.z : last_pos.z + direction.x * width / 2);
 		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ last_pos.x - width / 2 , 0, -float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+			Cheerio* c = new Cheerio(curve_front + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
-		Cheerio* c1 = new Cheerio({ last_pos.x + width / 2, 0, float(last_pos.z) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+
+		vec3 smth = vec3(direction.x == 1.0f ? last_pos.x : last_pos.x + direction.z * width / 2, height_t, direction.z == 1.0f ? last_pos.z : last_pos.z - direction.x * width / 2);
+		Cheerio* c1 = new Cheerio(smth, vec4(1.0f, 0.874f, 0.0f, 1.0f));
 		limits.push_back(c1);
-		Cheerio* c2 = new Cheerio({ last_pos.x + width / 2, 0, float(last_pos.z - 1) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c2);
+
+		if (abs(direction.x) == 1.0f) {
+			direction.z = -direction.x;
+			direction.x = 0.0f;
+		}
+		else if (abs(direction.z) == 1.0f) {
+			direction.x = direction.z;
+			direction.z = 0.0f;
+		}
+
+		float processed_x = direction.x;
+		float processed_z = direction.z;
+
+		printf("%f\n", direction.x);
+		vec3 curve_right = vec3(abs(direction.x) == 1.0f ? last_pos.x - direction.x * width / 2 : last_pos.x - direction.z * width, height_t, abs(direction.z) == 1.0f ? last_pos.z - direction.z * width / 2 : last_pos.z + direction.x * width);
 		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ float(i) + last_pos.x - 2.5f, 0, last_pos.z - 6 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
+			Cheerio* c = new Cheerio(curve_right + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
-		last_pos = last_pos + vec3(3.5, 0, -3.5);
+
+		printf("%f\n", direction.z);
+		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? 2.5 * direction.x : 2.5 * initial_x, 0, abs(direction.z) == 1.0f ? 2.5 * direction.z : 2.5 * initial_z) + direction;
 	}
 
-	void doEastRoad(int length) {
-		for (int i = 0; i < length; i++) {
-			Cheerio* c1 = new Cheerio({ last_pos.x - width / 2, 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			Cheerio* c2 = new Cheerio({ last_pos.x + width / 2, 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c1);
-			limits.push_back(c2);
-		}
-		last_pos = last_pos + vec3(0, 0, length);
-	}
 
-	void doEastCurve() {
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ float(i) + last_pos.x, 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		Cheerio* c1 = new Cheerio({ float(last_pos.x), 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c1);
-		Cheerio* c2 = new Cheerio({ float(last_pos.x + 1), 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c2);
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ last_pos.x + 6, 0, float(i) + last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		last_pos = last_pos + vec3(3.5, 0, 3.5);
-	}
-
-	void doWestCurve() {
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		Cheerio* c1 = new Cheerio({ float(last_pos.x), 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c1);
-		Cheerio* c2 = new Cheerio({ float(last_pos.x + 1), 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c2);
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ last_pos.x + 6, 0, -float(i) + last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		last_pos = last_pos + vec3(3.5, 0, -3.5);
-	}
-
-	void doWestSouthCurve() {
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ -float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		Cheerio* c1 = new Cheerio({ float(last_pos.x), 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c1);
-		Cheerio* c2 = new Cheerio({ float(last_pos.x - 1), 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c2);
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ last_pos.x - 6, 0, -float(i) + last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		last_pos = last_pos + vec3(-3.5, 0, -3.5);
-	}
-
-	void doWestRoad(int length) {
-		for (int i = 0; i < length; i++) {
-			Cheerio* c1 = new Cheerio({ last_pos.x - width / 2, 0, -float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			Cheerio* c2 = new Cheerio({ last_pos.x + width / 2, 0, -float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c1);
-			limits.push_back(c2);
-		}
-		last_pos = last_pos + vec3(0, 0, -length);
-	}
-
-	void doSouthCurve() {
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ last_pos.x + width / 2 , 0, float(i) + last_pos.z }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		Cheerio* c1 = new Cheerio({ last_pos.x - width / 2, 0, float(last_pos.z) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c1);
-		Cheerio* c2 = new Cheerio({ last_pos.x - width / 2, 0, float(last_pos.z + 1) }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-		limits.push_back(c2);
-		for (int i = 0; i < 6; i++) {
-			Cheerio* c = new Cheerio({ -float(i) + last_pos.x + width/2, 0, last_pos.z + 6 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c);
-		}
-		last_pos = last_pos + vec3(-3.5, 0, 3.5);
-	}
-
-	void doSouthRoad(int length) {
-		for (int i = 0; i < length; i++) {
-			Cheerio* c1 = new Cheerio({ -float(i) + last_pos.x, 0, last_pos.z - width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			Cheerio* c2 = new Cheerio({ -float(i) + last_pos.x, 0, last_pos.z + width / 2 }, vec4(1.0f, 0.874f, 0.0f, 1.0f));
-			limits.push_back(c1);
-			limits.push_back(c2);
-		}
-		last_pos = last_pos + vec3(-length, 0, 0);
+	void doFinishLine() {
+		flag = new Flag(last_pos, width, direction);
+		flag->createFlag();
 	}
 
 
@@ -188,12 +144,6 @@ public:
 		flag->draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 	}
 
-	void finishLine() {
-		vec3 pos1 = vec3(last_pos.x - 2.5, 0, last_pos.z);
-		vec3 pos2 = vec3(last_pos.x + 2.5, 0, last_pos.z);
-		flag = new Flag(pos1, pos2);
-
-	}
 
 	std::list<Cheerio*> getVisible() {
 		return this->visible;

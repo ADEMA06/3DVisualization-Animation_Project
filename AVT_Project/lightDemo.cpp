@@ -587,8 +587,13 @@ void init()
 	torus->mat.texCount = texcount;
 
 	road.setMesh(torus);
-
-	road.doNorthRoad(25);
+	road.doRoad(25);
+	road.doLeftCurve();
+	road.doRoad(25);
+	road.doLeftCurve();
+	road.doRoad(5);
+	road.doRightCurve();
+	/*road.doNorthRoad(25);
 	road.doEastCurve();
 	road.doEastRoad(20);
 	road.doSouthCurve();
@@ -602,8 +607,8 @@ void init()
 	road.doSouthCurve();
 	road.doSouthRoad(70);
 	road.doWestSouthCurve();
-	road.doWestRoad(70);
-	road.finishLine();
+	road.doWestRoad(70);*/
+	road.doFinishLine();
 
 	int n_cherrios = rand() % 5;
 	int offset[2] = { -1, 1 };

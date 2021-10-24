@@ -7,20 +7,30 @@
 
 class Flag : public GameObject {
 	std::vector<struct MyMesh*> poles;
+	float width;
+	vec3 direction;
 
 public:
-	Flag(vec3 position1, vec3 position2): GameObject(position1) {
+	Flag(vec3 position, float width, vec3 direction): StaticObject(position) {
+		this->width = width;
+		this->direction = direction;
+	}
+
+	void createFlag() {
+		MeshBuilder builder;
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
 		float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
+		printf("%f %f\n", direction.x, direction.z);
+
 		float height = 8.0f;
 		MyMesh* amesh = new MyMesh(createCylinder(height, 0.1f, 10));
-		setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, position1);
+		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { abs(direction.x) == 1.0f ? getPosition().x : getPosition().x + width / 2, getPosition().y, abs(direction.z) == 1.0f ? getPosition().z : getPosition().z + width / 2 });
 		poles.push_back(amesh);
 		amesh = new MyMesh(createCylinder(height, 0.1f, 10));
-		setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, position2);
+		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { abs(direction.x) == 1.0f ? getPosition().x : getPosition().x - width / 2, getPosition().y, abs(direction.z) == 1.0f ? getPosition().z : getPosition().z - width / 2 });
 		poles.push_back(amesh);
 	}
 
