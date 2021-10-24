@@ -174,12 +174,16 @@
     <ClInclude Include="Cheerio.h" />
     <ClInclude Include="Flag.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="InducedMovementObject.h" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="MeshBuilder.h" />
+    <ClInclude Include="MovableObject.h" />
     <ClInclude Include="Orange.h" />
     <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="PerspectiveCamera.h" />
     <ClInclude Include="Butter.h" />
     <ClInclude Include="Road.h" />
+    <ClInclude Include="StaticObject.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="geometry.h" />

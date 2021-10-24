@@ -7,7 +7,7 @@
 #include <vector>
 #include <list>
 
-
+float height_t = 0.0f;
 class Road {
 	struct MyMesh* mesh;
 	float width = 5.0f;
@@ -115,7 +115,10 @@ public:
 	}
 
 
-	void draw(VSShaderLib shader, GLint pvm_uniformId, GLint vm_uniformId, GLint normal_uniformId, GLint lPos_uniformId, vec3 camera_position, vec3 camera_direction, bool culling) {
+	void draw(VSShaderLib shader, vec3 camera_position, vec3 camera_direction, bool culling) {
+		MeshBuilder builder;
+		std::vector<vec3> offsets;
+
 		int size = limits.size();
 		visible.clear();
 		for (int i = 0; i < size; i++) {
@@ -132,13 +135,21 @@ public:
 				dot = 0.51;
 			}
 			if (dist < 50 && dot > 0.5) {
-				limits.at(i)->drawCheerio(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId, this->mesh);
+
+				offsets.push_back(limits.at(i)->getPosition());
 				if(dist < 10)
 					visible.push_back(limits.at(i));
+
 			}
 		}
+		builder.setShaders(shader, mesh, 1);
+		builder.setShadersInstances(shader, offsets);
+		pushMatrix(MODEL);
+		builder.drawMeshInstanced(mesh, shader, offsets.size());
+		popMatrix(MODEL);
+		
 
-		flag->draw(shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
+		flag->draw(shader);
 	}
 
 
