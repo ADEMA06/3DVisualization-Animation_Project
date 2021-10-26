@@ -41,7 +41,7 @@ public:
 	}
 
 
-	void drawCandle(VSShaderLib shader) {
+	void drawCandle(VSShaderLib *shader) {
 		MeshBuilder builder;
 		builder.setShaders(shader, candle);
 		pushMatrix(MODEL);

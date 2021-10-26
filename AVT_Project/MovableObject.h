@@ -7,11 +7,13 @@
 class MovableObject : public GameObject {
 	float speed;
 	float direction_angle;
+	bool isPaused;
 
 public:
 	MovableObject(vec3 position, float speed, float direction_angle = 0.0f) : GameObject(position) {
 		this->speed = speed;
 		this->direction_angle = direction_angle;
+		this->isPaused = false;
 	}
 
 	float getDirectionAngle() {
@@ -33,5 +35,13 @@ public:
 	vec3 getSpeedVector(float dt) {
 		float radians = this->direction_angle * M_PI / 180.0f;
 		return vec3(speed * cos(radians) * dt, 0.0f, speed * sin(-radians) * dt);
+	}
+
+	void setPause(bool pauseValue) {
+		this->isPaused = pauseValue;
+	}
+
+	bool getPause() {
+		return this->isPaused;
 	}
 };

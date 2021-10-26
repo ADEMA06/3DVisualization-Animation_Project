@@ -2,6 +2,16 @@
 #define __VEC_H__
 #include <math.h>
 
+struct vec2 {
+    float x;
+    float y;
+
+    vec2(float x = 0.0f, float y = 0.0f) {
+        this->x = x;
+        this->y = y;
+    }
+};
+
 struct vec3 {
     float x;
     float y;

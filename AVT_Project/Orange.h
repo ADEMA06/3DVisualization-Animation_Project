@@ -43,6 +43,7 @@ public:
     }
 
 	void updatePosition(vec3 tablePos, float tableWidth, float tableHeight, float dt) {
+		if (getPause()) return;
 		countdown = std::max(countdown - dt, 0.0f);
 		own_axis_angle += rotationSpeed() * dt;
 		vec3 speed_vector = getSpeedVector(dt);
@@ -63,6 +64,7 @@ public:
 	}
 
 	void updateSpeed(int t) {
+		if (getPause()) return;
 		setSpeed(getSpeed() / speed_level);
 		speed_level = std::min((t / 100000) + 1, 6);
 		setSpeed(getSpeed() * speed_level);
@@ -113,7 +115,7 @@ public:
 		translate(MODEL, 0, radius, 0);
 	}
 
-	void drawOrange(VSShaderLib shader) {
+	void drawOrange(VSShaderLib *shader) {
 		MeshBuilder builder;
 		//----------------Sphere-------------------
 		builder.setShaders(shader, sphere);
@@ -126,7 +128,7 @@ public:
 		//-----------------------------------------
 		
 		//----------------Stalk--------------------
-		setShaders(shader, stalk);
+		builder.setShaders(shader, stalk);
 		pushMatrix(MODEL);
 		stalkTransformations();
 		if (countdown == 0) {

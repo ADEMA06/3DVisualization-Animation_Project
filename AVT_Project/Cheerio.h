@@ -48,14 +48,14 @@ public:
 		mMatrix[MODEL][14] = getPosition().z;
 	}
 
-	void drawCheerio(VSShaderLib shader, MyMesh* mesh) {
+	/*void drawCheerio(VSShaderLib& shader, MyMesh* mesh) {
 		GLint loc;
 		setShaders(shader, mesh);
 		pushMatrix(MODEL);
 		bodyTransformations();
 		drawMesh(mesh, shader, pvm_uniformId, vm_uniformId, normal_uniformId, lPos_uniformId);
 		popMatrix(MODEL);
-	}
+	}*/
 
 	AABB getBoundingBox() {
 		return GameObject::getBoundingBox();

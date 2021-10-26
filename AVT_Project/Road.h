@@ -115,7 +115,7 @@ public:
 	}
 
 
-	void draw(VSShaderLib shader, vec3 camera_position, vec3 camera_direction, bool culling) {
+	void draw(VSShaderLib *shader, vec3 camera_position, vec3 camera_direction, bool culling) {
 		MeshBuilder builder;
 		std::vector<vec3> offsets;
 
@@ -155,6 +155,10 @@ public:
 
 	std::list<Cheerio*> getVisible() {
 		return this->visible;
+	}
+
+	std::vector<Cheerio*> getLimits() {
+		return this->limits;
 	}
 
 

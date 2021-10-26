@@ -51,7 +51,7 @@ public:
 		}
 	}
 
-	void drawTable(VSShaderLib shader) {
+	void drawTable(VSShaderLib *shader) {
 		MeshBuilder builder;
 		builder.setShaders(shader, base);
 		pushMatrix(MODEL);

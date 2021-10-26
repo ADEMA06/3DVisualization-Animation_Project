@@ -34,7 +34,7 @@ public:
 	}
 	
 
-	void draw(VSShaderLib shader) {
+	void draw(VSShaderLib *shader) {
 		MeshBuilder builder;
 		for (int i = 0; i < poles.size(); i++) {
 			builder.setShaders(shader, poles[i]);

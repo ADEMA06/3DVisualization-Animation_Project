@@ -45,6 +45,7 @@
 #include "Road.h"
 #include "Light.h"
 #include "Candle.h"
+#include "HUD.h"
 
 using namespace std;
 
@@ -86,7 +87,13 @@ vector<Candle> candles;
 int current_camera = 0;
 Camera* cameras[3];
 
-VSShaderLib shader;
+VSShaderLib *shader = new VSShaderLib();
+VSShaderLib *shaderText = new VSShaderLib();
+
+//File with the font
+const string font_name = "fonts/arial.ttf";
+
+HUD hud;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
@@ -165,21 +172,36 @@ void changeSize(int w, int h) {
 	WinY = h;
 }
 
+void pauseObjects() {
+	car.setPause(keys['s']);
+	butter.setPause(keys['s']);
+	for (Orange &o : oranges) {
+		o.setPause(keys['s']);
+	}
+
+	for (Cheerio *c : road.getLimits()) {
+		c->setPause(keys['s']);
+	}
+
+}
+
 void update() {
-	if (!(keys['q'] || keys['a'])) {
-		car.stop(dt);
-	}
-	if (keys['q']) {
-		car.goForward(dt);
-	}
-	if (keys['a']) {
-		car.goBackwards(dt);
-	}
-	if (keys['o']) {
-		car.goLeft(dt);
-	}
-	if (keys['p']) {
-		car.goRight(dt);
+	if (!car.getPause()) {
+		if (!(keys['q'] || keys['a'])) {
+			car.stop(dt);
+		}
+		if (keys['q']) {
+			car.goForward(dt);
+		}
+		if (keys['a']) {
+			car.goBackwards(dt);
+		}
+		if (keys['o']) {
+			car.goLeft(dt);
+		}
+		if (keys['p']) {
+			car.goRight(dt);
+		}
 	}
 
 }
@@ -246,9 +268,9 @@ void setLights() {
 	float res[4];
 	float dirlight_direction[4] = { 0.0f, -1.0f, 0.0f, 0.0f };
 	multMatrixPoint(VIEW, dirlight_direction, res);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "uni_dirlight.direction");
+	loc = glGetUniformLocation(shader->getProgramIndex(), "uni_dirlight.direction");
 	glUniform4fv(loc, 1, res);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "dir_on");
+	loc = glGetUniformLocation(shader->getProgramIndex(), "dir_on");
 	glUniform1i(loc, directionalLight.on);
 
 	int count = 0;
@@ -258,11 +280,11 @@ void setLights() {
 		float values[4] = { light_pos.x, light_pos.y, light_pos.z, light_pos.w };
 		multMatrixPoint(VIEW, values, mult);
 		string location = "uni_pointlights[" + to_string(i) + "].position";
-		loc = glGetUniformLocation(shader.getProgramIndex(), location.c_str());
+		loc = glGetUniformLocation(shader->getProgramIndex(), location.c_str());
 		glUniform4fv(loc, 1, mult);
 
 	}
-	loc = glGetUniformLocation(shader.getProgramIndex(), "point_on");
+	loc = glGetUniformLocation(shader->getProgramIndex(), "point_on");
 	glUniform1i(loc, pointLights_on);
 }
 
@@ -286,7 +308,7 @@ void renderScene(void) {
 	loadIdentity(MODEL);
 	// set the camera using a function similar to gluLookAt
 	// use our shader
-	glUseProgram(shader.getProgramIndex());
+	glUseProgram(shader->getProgramIndex());
 	setCameraTarget();
 
 	float res[4];
@@ -310,16 +332,19 @@ void renderScene(void) {
 	drawObjects();
 	setLights();
 
+
+
+	//World axis
 	/*for (int i = 0; i < 3; ++i) {
 
 		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
 		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
 		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.specular");
 		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
 		translate(MODEL, myMeshes[objId].position.x, myMeshes[objId].position.y, myMeshes[objId].position.z);
@@ -335,7 +360,7 @@ void renderScene(void) {
 		// Render mesh
 		glBindVertexArray(myMeshes[objId].vao);
 
-		if (!shader.isProgramValid()) {
+		if (!shader->isProgramValid()) {
 			printf("Program Not Valid!\n");
 			exit(1);
 		}
@@ -346,9 +371,16 @@ void renderScene(void) {
 		objId++;
 	}*/
 
+	glDisable(GL_DEPTH_TEST);
+	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	hud.renderText(shaderText);
+
+
 	update();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+	glEnable(GL_DEPTH_TEST);
 	glutSwapBuffers();
 }
 
@@ -359,7 +391,7 @@ void renderScene(void) {
 
 
 void processReleaseKeys(unsigned char key, int xx, int yy) {
-	keys[key] = false;
+	if(key != 's') keys[key] = false;
 }
 
 void processKeys(unsigned char key, int xx, int yy)
@@ -387,6 +419,9 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'o': keys['o'] = true; break;
 	case 'a': keys['a'] = true; break;
 	case 'p': keys['p'] = true; break;
+	
+		//Pause
+	case 's': keys['s'] = !keys['s']; pauseObjects();  break;
 	}
 }
 
@@ -492,30 +527,37 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 GLuint setupShaders() {
 
 	// Shader for models
-	shader.init();
-	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight.vert");
-	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight.frag");
+	shader->init();
+	shader->loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight.vert");
+	shader->loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight.frag");
 
 	// set semantics for the shader variables
-	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
-	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
-	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindFragDataLocation(shader->getProgramIndex(), 0, "colorOut");
+	glBindAttribLocation(shader->getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
+	glBindAttribLocation(shader->getProgramIndex(), NORMAL_ATTRIB, "normal");
+	glBindAttribLocation(shader->getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
-	glLinkProgram(shader.getProgramIndex());
+	glLinkProgram(shader->getProgramIndex());
 
-	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
-	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
-	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
-	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
-	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
-	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	pvm_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_pvm");
+	vm_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_viewModel");
+	normal_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_normal");
+	lPos_uniformId = glGetUniformLocation(shader->getProgramIndex(), "l_pos");
+	tex_loc0 = glGetUniformLocation(shader->getProgramIndex(), "texmap0");
+	tex_loc1 = glGetUniformLocation(shader->getProgramIndex(), "texmap1");
+	tex_loc2 = glGetUniformLocation(shader->getProgramIndex(), "texmap2");
+	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader->getAllInfoLogs().c_str());
+
+	shaderText->init();
+	shaderText->loadShader(VSShaderLib::VERTEX_SHADER, "shaders/text.vert");
+	shaderText->loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/text.frag");
+
+	glLinkProgram(shaderText->getProgramIndex());
+
+	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shaderText->getAllInfoLogs().c_str());
 
 
-	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
-
-	return(shader.isProgramLinked());
+	return(shader->isProgramLinked() && shaderText->isProgramLinked());
 }
 
 // ------------------------------------------------------------
@@ -555,6 +597,12 @@ void init()
 		exit(0);
 	}
 	ilInit();
+
+	/// Initialization of freetype library with font_name file
+	freeType_init(font_name);
+	vector<string> text = { "Lives:" + to_string(5) }; //TODO: Replace with the actual player lives
+	vector<vec2> coord = { {WinX / 10.0f, WinY / 10.0f}}; //TODO: Don't use absolute values
+	hud = *new HUD(text, coord);
 
 	//Texture Object definition
 
