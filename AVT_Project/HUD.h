@@ -10,16 +10,30 @@
 
 using namespace std;
 
+typedef struct textToRender
+{
+    string text;
+    vec2 coordinates;
+    bool toRender;
+
+    textToRender(string text, vec2 coords, bool toRender = true) {
+        this->text = text;
+        this->coordinates = coords;
+        this->toRender = toRender;
+    }
+
+}textToRender;
+
 class HUD {
-    vector<string> text;
-    vector<vec2> coordinates;
+
+    list<textToRender*> text;
 
 public:
     HUD(){}
 
-    HUD(vector<string> text, vector<vec2> coordinates) {
-        this->text = text;
-        this->coordinates = coordinates;
+    void addText(textToRender* text) {
+        printf("%s\n", text->text.c_str());
+        this->text.push_back(text);
     }
 
     void renderText(VSShaderLib *shader) {
@@ -33,11 +47,8 @@ public:
         pushMatrix(VIEW);
         loadIdentity(VIEW);
         ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-        float x, y;
-        for (int i = 0; i < this->text.size(); i++) {
-            x = this->coordinates.at(i).x;
-            y = this->coordinates.at(i).y;
-            RenderText(*shader, this->text.at(i), x, y, 1.0f, 1.0f, 1.0f, 1.0f);
+        for (auto text: this->text) {
+            if(text->toRender)  RenderText(*shader, text->text, text->coordinates.x, text->coordinates.y, 1.0f, 1.0f, 1.0f, 1.0f);
         }
         /*RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
         RenderText(shaderText, "AVT Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);

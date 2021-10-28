@@ -44,6 +44,8 @@ class Car : public MovableObject {
 	//Vector moved after update
 	vec3 offset;
 
+	int lives = 5;
+
 public:
     Car(vec3 position, float accel, float max_speed, vec4 body_color, vec4 tires_color) : MovableObject(position, 0.0f) {
 		//Mesh details
@@ -77,6 +79,14 @@ public:
 		setIdentityMatrix(body_transformations);
 		setIdentityMatrix(cam_transformations);
     }
+
+	int getLives() {
+		return this->lives;
+	}
+
+	void decrementLives() {
+		this->lives -= 1;
+	}
 
 	float* getBodyTransformations() {
 		return body_transformations;

@@ -83,7 +83,8 @@ std::vector<Orange> oranges;
 
 vector<Candle> candles;
 
-
+textToRender* lives = new textToRender("Lives: " + to_string(car.getLives()), { WinX / 10.0f, WinY / 10.0f });
+textToRender* pause = new textToRender("PAUSE", { (WinX / 2.0f) - 75.0f, WinY / 2.0f }, false);
 int current_camera = 0;
 Camera* cameras[3];
 
@@ -112,6 +113,7 @@ GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint dir_light_uniformId;
+GLint pause_on_Id;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLuint TextureArray[3];
 
@@ -170,6 +172,8 @@ void changeSize(int w, int h) {
 	cameras[current_camera]->setViewPort(w, h);
 	WinX = w;
 	WinY = h;
+	lives->coordinates = { WinX/10.0f, WinY/10.0f };
+	pause->coordinates = { (WinX / 2.0f) - 75.0f, WinY / 2.0f };
 }
 
 void pauseObjects() {
@@ -226,6 +230,8 @@ void drawObjects() {
 			car.setSpeed(0.0f);
 			car.setDirectionAngle(0.0f);
 			car.resetBoundingBox();
+			car.decrementLives();
+			lives->text = "Lives: " + to_string(car.getLives());
 		}
 	}
 	
@@ -328,6 +334,8 @@ void renderScene(void) {
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 
+	glUniform1i(pause_on_Id, keys['s']);
+
 	int objId = 0;
 	drawObjects();
 	setLights();
@@ -421,7 +429,7 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'p': keys['p'] = true; break;
 	
 		//Pause
-	case 's': keys['s'] = !keys['s']; pauseObjects();  break;
+	case 's': keys['s'] = !keys['s']; pauseObjects(); pause->toRender = keys['s']; break;
 	}
 }
 
@@ -543,6 +551,7 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_normal");
 	lPos_uniformId = glGetUniformLocation(shader->getProgramIndex(), "l_pos");
+	pause_on_Id = glGetUniformLocation(shader->getProgramIndex(), "pause_on");
 	tex_loc0 = glGetUniformLocation(shader->getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader->getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader->getProgramIndex(), "texmap2");
@@ -600,9 +609,8 @@ void init()
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
-	vector<string> text = { "Lives:" + to_string(5) }; //TODO: Replace with the actual player lives
-	vector<vec2> coord = { {WinX / 10.0f, WinY / 10.0f}}; //TODO: Don't use absolute values
-	hud = *new HUD(text, coord);
+	hud.addText(lives);
+	hud.addText(pause);
 
 	//Texture Object definition
 
