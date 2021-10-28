@@ -6,8 +6,11 @@ class InducedMovementObject : public GameObject {
 	float accel;
 	float speed_scalar;
 	vec3 induced_speed;
+	bool isPaused;
 public:
-	InducedMovementObject(vec3 position) : GameObject(position) {};
+	InducedMovementObject(vec3 position) : GameObject(position) {
+		this->isPaused = false;
+	};
 
 	void setInducedSpeed(vec3 ind_speed) {
 		induced_speed = ind_speed;
@@ -33,6 +36,14 @@ public:
 		return speed_scalar;
 	}
 
+	void setPause(bool pauseValue) {
+		this->isPaused = pauseValue;
+	}
+
+	bool getPause() {
+		return this->isPaused;
+	}
+
 
 
 	void collision_reaction(vec3 car_pos, float speed_scalar, float accel) {
@@ -43,6 +54,7 @@ public:
 	}
 
 	void update(float dt) {
+		if (isPaused) return;
 		induced_speed = induced_speed + induced_speed.normalize() * accel * dt;
 		setSpeedScalar(getSpeedScalar() + accel * dt);
 		if (getSpeedScalar() > 0) {

@@ -44,6 +44,8 @@ class Car : public MovableObject {
 	//Vector moved after update
 	vec3 offset;
 
+	int lives = 5;
+
 public:
     Car(vec3 position, float accel, float max_speed, vec4 body_color, vec4 tires_color) : MovableObject(position, 0.0f) {
 		//Mesh details
@@ -77,6 +79,14 @@ public:
 		setIdentityMatrix(body_transformations);
 		setIdentityMatrix(cam_transformations);
     }
+
+	int getLives() {
+		return this->lives;
+	}
+
+	void decrementLives() {
+		this->lives -= 1;
+	}
 
 	float* getBodyTransformations() {
 		return body_transformations;
@@ -118,6 +128,7 @@ public:
 	}
 
 	void update(float dt) {
+		if (getPause()) return;
 		vec3 position = getPosition();
 		vec3 speed_vector = getSpeedVector(dt);
 		offset = speed_vector;
@@ -151,7 +162,7 @@ public:
 
 	bool checkCollision(AABB collision) {
 
-		if (GameObject::checkCollision(collision)) {
+		if (GameObject::checkCollision(collision) && !getPause()) {
 			this->setPosition(this->getPosition() - offset);
 			updateBoundingBox(vec3(offset.x*-1, offset.y*-1, offset.z*-1));
 			this->setSpeed(0);
@@ -181,7 +192,7 @@ public:
 		rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
 	}
 
-	void setCarLightsAndCamera(Camera* camera, VSShaderLib shader) {
+	void setCarLightsAndCamera(Camera* camera, VSShaderLib *shader) {
 		float res[4];
 		float res1[4];
 
@@ -205,36 +216,36 @@ public:
 		//Obtain spotlight positions and directions in eye coordinates--------------------------------------
 		multMatrixPoint(cam_transformations, lights_dir1, res);
 		multMatrixPoint(VIEW, res, res1);
-		GLint loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].direction");
+		GLint loc = glGetUniformLocation(shader->getProgramIndex(), "uni_spotlights[0].direction");
 		glUniform4fv(loc, 1, res1);
 
 		multMatrixPoint(cam_transformations, lights_pos1, res);
 		multMatrixPoint(VIEW, res, res1);   //lightPos definido em World Coord so is converted to eye space
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].position");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "uni_spotlights[0].position");
 		glUniform4fv(loc, 1, res1);
 
-		loc = glGetUniformLocation(shader.getProgramIndex(), "spot_on");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "spot_on");
 		glUniform1i(loc, spotlight1.on);
 
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[0].cutOff");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "uni_spotlights[0].cutOff");
 		glUniform1f(loc, spotlight1.cut_off);
 
 		multMatrixPoint(cam_transformations, lights_dir2, res);
 		multMatrixPoint(VIEW, res, res1);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].direction");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "uni_spotlights[1].direction");
 		glUniform4fv(loc, 1, res1);
 
 		multMatrixPoint(cam_transformations, lights_pos2, res);
 		multMatrixPoint(VIEW, res, res1);   //lightPos definido em World Coord so is converted to eye space
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].position");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "uni_spotlights[1].position");
 		glUniform4fv(loc, 1, res1);
 
-		loc = glGetUniformLocation(shader.getProgramIndex(), "uni_spotlights[1].cutOff");
+		loc = glGetUniformLocation(shader->getProgramIndex(), "uni_spotlights[1].cutOff");
 		glUniform1f(loc, spotlight1.cut_off);
 		//---------------------------------------------------------------------------------------------------
 	}
 
-	void drawCar(VSShaderLib shader, Camera* camera) {
+	void drawCar(VSShaderLib *shader, Camera* camera) {
 		MeshBuilder builder;
 		builder.setShaders(shader, body);
 

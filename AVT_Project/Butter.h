@@ -57,7 +57,7 @@ public:
 		scale(MODEL, butter_width, butter_height * 1.01f, butter_thickness * 1.01f);
 	}
 
-	void drawButter(VSShaderLib shader) {
+	void drawButter(VSShaderLib *shader) {
 		MeshBuilder builder;
 		builder.setShaders(shader, butter_body);
 		pushMatrix(MODEL);

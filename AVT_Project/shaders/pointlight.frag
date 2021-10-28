@@ -5,6 +5,8 @@ uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 
+uniform int pause_on;
+
 struct Materials {
 	vec4 diffuse;
 	vec4 ambient;
@@ -81,7 +83,7 @@ void main() {
 
 	float spotIntensity = 0.0f;
 	spotIntensity = max(dot(n, spot_l1), 0.0);
-	if(spot_on != 0) {
+	if(spot_on != 0 && pause_on == 0) {
 		if(dot(spot_dir1, spot_l1) > spotlights[0].cutOff) {
 			if (spotIntensity > 0.0) {
 				vec3 h = normalize(spot_l1 + e);
@@ -94,7 +96,7 @@ void main() {
 
 	float spotIntensity1 = 0.0f;
 	spotIntensity1 = max(dot(n, spot_l2), 0.0);
-	if(spot_on != 0) {
+	if(spot_on != 0 && pause_on == 0) {
 		if(dot(spot_dir2, spot_l2) > spotlights[1].cutOff) {
 			if (spotIntensity1 > 0.0) {
 				vec3 h = normalize(spot_l2 + e);
@@ -108,7 +110,7 @@ void main() {
 
 	float pointIntensity = 0.0;
 	for(int i = 0; i < 6; i = i+1) {
-		if(point_on != 0) {
+		if(point_on != 0 && pause_on == 0) {
 			float distance = sqrt(pow(pointlights[i].lightDir.x,2) + pow(pointlights[i].lightDir.y,2) + pow(pointlights[i].lightDir.z,2));
 			float attenuation = 1.0/(1.0 + 0.1*distance+ 0.01*distance*distance);
 			l = normalize(pointlights[i].lightDir);
@@ -149,4 +151,6 @@ void main() {
 	vec3 finalColor = mix(fogColor, colorRGB, f);
 	
 	//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
+
+	if(pause_on == 1) colorOut = vec4(vec3(colorOut)/3, colorOut.a);
 }

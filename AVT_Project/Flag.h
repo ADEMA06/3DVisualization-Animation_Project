@@ -7,10 +7,12 @@
 class Flag : public StaticObject {
 	std::vector<struct MyMesh*> poles;
 	float width;
+	vec3 direction;
 
 public:
-	Flag(vec3 position, float width): StaticObject(position) {
+	Flag(vec3 position, float width, vec3 direction): StaticObject(position) {
 		this->width = width;
+		this->direction = direction;
 	}
 
 	void createFlag() {
@@ -20,17 +22,19 @@ public:
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
+		printf("%f %f\n", direction.x, direction.z);
+
 		float height = 8.0f;
 		MyMesh* amesh = new MyMesh(createCylinder(height, 0.1f, 10));
-		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { getPosition().x + width / 2, getPosition().y, getPosition().z });
+		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { abs(direction.x) == 1.0f ? getPosition().x : getPosition().x + width / 2, getPosition().y, abs(direction.z) == 1.0f ? getPosition().z : getPosition().z + width / 2 });
 		poles.push_back(amesh);
 		amesh = new MyMesh(createCylinder(height, 0.1f, 10));
-		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { getPosition().x - width / 2, getPosition().y, getPosition().z });
+		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { abs(direction.x) == 1.0f ? getPosition().x : getPosition().x - width / 2, getPosition().y, abs(direction.z) == 1.0f ? getPosition().z : getPosition().z - width / 2 });
 		poles.push_back(amesh);
 	}
 	
 
-	void draw(VSShaderLib shader) {
+	void draw(VSShaderLib *shader) {
 		MeshBuilder builder;
 		for (int i = 0; i < poles.size(); i++) {
 			builder.setShaders(shader, poles[i]);
