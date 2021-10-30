@@ -44,7 +44,8 @@ class Car : public MovableObject {
 	//Vector moved after update
 	vec3 offset;
 
-	int lives = 5;
+	int lives = 1;
+	float points = 0;
 
 public:
     Car(vec3 position, float accel, float max_speed, vec4 body_color, vec4 tires_color) : MovableObject(position, 0.0f) {
@@ -84,6 +85,16 @@ public:
 		return this->lives;
 	}
 
+	//TODO: Change points using speed instead of accel
+	int getPoints() {
+		return this->points;
+	}
+
+	void setPoints(int points) {
+		if (points < 0) this->points = 0;
+		else this->points = points;
+	}
+
 	void decrementLives() {
 		this->lives -= 1;
 	}
@@ -100,10 +111,13 @@ public:
 
 	void goForward(float dt) {
 		setSpeed(std::min(getSpeed() + accel * dt, max_speed));
+		if(getSpeed() > 0) this->points += (getSpeed() * dt);
 	}
 
 	void goBackwards(float dt) {
 		setSpeed(std::max(getSpeed() - accel * dt, -max_speed));
+		if(this->points > 0) this->points += (getSpeed() * dt);
+
 	}
 
 	void goLeft(float dt) {
@@ -117,10 +131,10 @@ public:
 	}
 
 	void stop(float dt) {
-		if(getSpeed() > 0)
-			setSpeed(std::max(getSpeed() - accel*3 * dt, 0.0f));
-		else
-			setSpeed(std::min(getSpeed() + accel*3 * dt, 0.0f));
+		if(getSpeed() > 0) setSpeed(std::max(getSpeed() - accel*3 * dt, 0.0f));
+		else setSpeed(std::min(getSpeed() + accel*3 * dt, 0.0f));
+		if(this->points > 0) this->points += (getSpeed() * dt);
+
 	}
 
 	void turnOnOffLights() {
