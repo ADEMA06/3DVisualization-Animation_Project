@@ -50,11 +50,15 @@ public:
         for (auto text: this->text) {
             if(text->toRender)  RenderText(*shader, text->text, text->coordinates.x, text->coordinates.y, 1.0f, 1.0f, 1.0f, 1.0f);
         }
-        /*RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-        RenderText(shaderText, "AVT Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
-        */popMatrix(PROJECTION);
+        popMatrix(PROJECTION);
         popMatrix(VIEW);
         popMatrix(MODEL);
+    }
+
+    void resetHud() {
+        text.clear();
+        glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //may need to remove this
     }
 };
 

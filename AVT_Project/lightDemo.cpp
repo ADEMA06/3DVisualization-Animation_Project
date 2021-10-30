@@ -62,14 +62,16 @@ int t;
 
 float camera_angle_xz = M_PI;
 
-vec3 table_pos(0.0f, 0.0f, 0.0f);
-
-vec3 car_pos(1.0f, 0.0f, 1.0f);
-vec3 butter_pos(5.0f, 0.0f, 0.0f);
 vec4 car_color(1.0f, 1.0f, 1.0f, 0.7f);
 vec4 color_tire(0.1f, 0.1f, 0.1f, 1.0f);
 vec4 cheerio_color(1.0f, 0.874f, 0.0f, 1.0f);
 vec4 butter_foil_color(0.0f, 0.0f, 0.9f, 1.0f);
+
+vec3 table_pos(0.0f, 0.0f, 0.0f);
+
+vec3 car_pos(1.0f, 0.0f, 1.0f);
+vec3 butter_pos(5.0f, 0.0f, 0.0f);
+
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
@@ -83,8 +85,13 @@ std::vector<Orange> oranges;
 
 vector<Candle> candles;
 
-textToRender* lives = new textToRender("Lives: " + to_string(car.getLives()), { WinX / 10.0f, WinY / 10.0f });
-textToRender* pause = new textToRender("PAUSE", { (WinX / 2.0f) - 75.0f, WinY / 2.0f }, false);
+textToRender* lives;
+textToRender* pause;
+textToRender* points;
+textToRender* game_over;
+
+bool isGameOver;
+
 int current_camera = 0;
 Camera* cameras[3];
 
@@ -146,6 +153,8 @@ bool mouse_pressed = false;
 vec3 oldPosition = vec3(0.0f,0.0f,0.0f);
 vec3 currentPosition;
 
+void resetGame();
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -174,6 +183,8 @@ void changeSize(int w, int h) {
 	WinY = h;
 	lives->coordinates = { WinX/10.0f, WinY/10.0f };
 	pause->coordinates = { (WinX / 2.0f) - 75.0f, WinY / 2.0f };
+	points->coordinates = { WinX / 10.0f, WinY * 9.0f / 10.0f };
+	game_over->coordinates = { (WinX / 2.0f) - 100.0f, WinY / 2.0f };
 }
 
 void pauseObjects() {
@@ -190,7 +201,7 @@ void pauseObjects() {
 }
 
 void update() {
-	if (!car.getPause()) {
+	if (!car.getPause() && !isGameOver) {
 		if (!(keys['q'] || keys['a'])) {
 			car.stop(dt);
 		}
@@ -207,6 +218,7 @@ void update() {
 			car.goRight(dt);
 		}
 	}
+
 
 }
 
@@ -232,18 +244,28 @@ void drawObjects() {
 			car.resetBoundingBox();
 			car.decrementLives();
 			lives->text = "Lives: " + to_string(car.getLives());
+			car.setPoints(car.getPoints() - 20);
+			if (car.getLives() == 0) {
+				isGameOver = true;
+				keys['s'] = true;
+				pauseObjects();
+				pause->toRender = false;
+				game_over->toRender = true;
+			}
 		}
 	}
 	
 	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
 		if (car.checkCollision(cheerio->getBoundingBox())) {
+			car.setPoints(car.getPoints() - 20);
 			cheerio->collision_reaction(car_pos, 1.1f, -1.0f);
 		}
 		cheerio->update(dt);
 	}
 
 	if (car.checkCollision(butter.getBoundingBox())) {
+		car.setPoints(car.getPoints() - 20);
 		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
 	butter.update(dt);
@@ -265,6 +287,8 @@ void drawObjects() {
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
 	butter.drawButter(shader);
+
+	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
 
 	
 }
@@ -428,8 +452,11 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'a': keys['a'] = true; break;
 	case 'p': keys['p'] = true; break;
 	
+		//Reset game
+	case 'r': if (isGameOver) resetGame(); break;
+	
 		//Pause
-	case 's': keys['s'] = !keys['s']; pauseObjects(); pause->toRender = keys['s']; break;
+	case 's': if (!isGameOver) { keys['s'] = !keys['s']; pauseObjects(); pause->toRender = keys['s']; } break;
 	}
 }
 
@@ -596,6 +623,24 @@ void init()
 	float shininess = 100.0f;
 	int texcount = 0;
 
+	isGameOver = false;
+
+	current_camera = 0;
+
+	table_pos = vec3(0.0f, 0.0f, 0.0f);
+	car_pos = vec3(1.0f, 0.0f, 1.0f);
+	butter_pos = vec3(5.0f, 0.0f, 0.0f);
+	orange_pos = vec3(5.0f, 0.0f, 5.0f);
+
+
+	table = Table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
+	car = Car(car_pos, 2.5f, 20.0f, car_color, color_tire);
+	butter = Butter(butter_pos, butter_foil_color);
+	road = Road(vec3(0.0f, 0.0f, 0.0f));
+	cheerios.clear();
+	oranges.clear();
+	candles.clear();
+
 	directionalLight.direction = vec4(0.0f, 1.0f, 0.0f, 0.0f);
 	directionalLight.on = 1;
 
@@ -609,8 +654,16 @@ void init()
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
+
+	lives = new textToRender("Lives: " + to_string(car.getLives()), { WinX / 10.0f, WinY / 10.0f });
+	pause = new textToRender("PAUSE", { (WinX / 2.0f) - 75.0f, WinY / 2.0f }, false);
+	points = new textToRender("Points: " + to_string(car.getPoints()), { WinX / 10.0f, WinY * 9.0f / 10.0f });
+	game_over = new textToRender("GAME OVER", { (WinX / 2.0f) - 100.0f, WinY / 2.0f }, false);
+
 	hud.addText(lives);
 	hud.addText(pause);
+	hud.addText(points);
+	hud.addText(game_over);
 
 	//Texture Object definition
 
@@ -728,9 +781,35 @@ void init()
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
 	glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //may need to remove this
 	glEnable(GL_BLEND);
 
 }
+
+void resetGame() {
+	//	Camera initialization	
+	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f, -55.0f);
+	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
+	PerspectiveCamera camera3({ -4.0f,1.0f,1.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
+
+	currentPosition = vec3(-4, 1, 1);
+	camera_angle_xz = M_PI;
+
+	cameras[0] = &camera1;
+	cameras[1] = &camera2;
+	cameras[2] = &camera3;
+
+	hud.resetHud();
+	for (int i = 0; i < 256; i++) {
+		keys[i] = false;
+	}
+
+	init();
+
+	glutMainLoop();
+
+}
+
 
 
 // ------------------------------------------------------------
