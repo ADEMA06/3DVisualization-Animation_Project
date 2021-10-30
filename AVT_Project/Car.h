@@ -4,6 +4,8 @@
 #define _USE_MATH_DEFINES
 #include "MovableObject.h"
 #include <string>
+#include <fstream>
+#include "AssimpMesh.h"
 #include "MeshBuilder.h"
 #include "Light.h"
 #include "Camera.h"
@@ -21,10 +23,15 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 /// The normal matrix
 extern float mNormal3x3[9];
 
+extern const aiScene* scene;
+vec3 min_aabb;
+vec3 max_aabb;
+
+char model_dir[50] = "lowPolyCharger";
+
 class Car : public MovableObject {
 	//Meshes and Mesh details
-    std::vector<struct MyMesh> tires;
-    struct MyMesh body;
+    std::vector<struct MyMesh> meshes;
 	vec4 body_color;
 	vec4 tires_color;
 
@@ -106,7 +113,7 @@ public:
 	void resetBoundingBox(){
 		vec3 min_pos = vec3(- car_width / 2, - car_height / 2, - car_thickness / 2);
 		vec3 max_pos = vec3(car_width / 2, car_height / 2, car_thickness / 2);
-		setBoundingBox(min_pos, max_pos);
+		setBoundingBox(min_aabb, max_aabb);
 	}
 
 	void goForward(float dt) {
@@ -143,6 +150,7 @@ public:
 
 	void update(float dt) {
 		if (getPause()) return;
+
 		vec3 position = getPosition();
 		vec3 speed_vector = getSpeedVector(dt);
 		offset = speed_vector;
@@ -153,25 +161,35 @@ public:
 	void createCar() {
 		MeshBuilder builder;
 
-		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-		float diff[] = { body_color.x, body_color.y, body_color.z, 1.0};
-		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-		float shininess = 100.0f;
-		int texcount = 0;
-		vec3 car_pos = getPosition();
-		body = createCube();
-		body = builder.setMesh(body, amb, diff, spec, emissive, shininess, texcount, car_pos);
-		MyMesh amesh;
-		float tires_diff[] = { tires_color.x, tires_color.y, tires_color.z, tires_color.w };
-		for (int i = -1; i <= 1; i += 2) {
-			for (int j = -1; j <= 1; j += 2) {
-				amesh = createTorus(0.05f, 0.25f, 20, 50);
-				vec3 position = vec3(car_width/2*i + 0.25f*(-i), 0.0f, car_height/2*j);
-				amesh = builder.setMesh(amesh, amb, tires_diff, spec, emissive, shininess, texcount, position);
-				tires.push_back(amesh);
+		std::string filepath;
+		while (true) {
+
+			std::ostringstream oss;
+			oss << model_dir << "/" << model_dir << ".obj";;
+			filepath = oss.str();   //path of OBJ file in the VS project
+
+			strcat(model_dir, "/");
+			//check if file exists
+			std::ifstream fin(filepath.c_str());
+			if (!fin.fail()) {
+				fin.close();
+				break;
 			}
+			else
+				printf("Couldn't open file: %s\n", filepath.c_str());
 		}
+		//creation of Mymesh array with VAO Geometry and Material
+		if (!Import3DFromFile(filepath))
+			return;
+		setBoundingBox(min_aabb, max_aabb);
+		meshes = createMeshFromAssimp(scene);
+
+		float max_x = max_aabb.x*0.6f;
+		float max_z = max_aabb.z*0.6f;
+		float min_z = min_aabb.z*0.6f;
+
+		spotlight1.position = vec4(max_x, 0.15f, min_z+0.1f, 1.0f);
+		spotlight2.position = vec4(max_x, 0.15f, max_z-0.1f, 1.0f);
 	}
 
 	bool checkCollision(AABB collision) {
@@ -192,18 +210,10 @@ public:
 		setIdentityMatrix(cam_transformations);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
 		rotate(MODEL, getDirectionAngle(), 0.0f, 1.0f, 0.0f);
-		multMatrix(body_transformations, get(MODEL));
-		translate(MODEL, -car_width / 2, 0.25, -car_height / 2);
 		multMatrix(cam_transformations, get(MODEL));
-		scale(MODEL, car_width, car_thickness, car_height);
-	}
-
-	void tireTransformations(int i) {
-		vec3 position = getPosition();
-		multMatrix(MODEL, body_transformations);
-		
-		translate(MODEL, tires.at(i).position.x, tires.at(i).position.y + 0.25f, tires.at(i).position.z);
-		rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
+		rotate(MODEL, 180.0f, 0.0f, 1.0f, 0.0f);
+		scale(MODEL, 0.6f, 0.6f, 0.6f);
+		multMatrix(body_transformations, get(MODEL));
 	}
 
 	void setCarLightsAndCamera(Camera* camera, VSShaderLib *shader) {
@@ -259,22 +269,43 @@ public:
 		//---------------------------------------------------------------------------------------------------
 	}
 
+	void carRecursiveDraw(const aiScene* scene, aiNode* nd, VSShaderLib* shader) {
+		MeshBuilder builder;
+		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+		for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+			int diffMapCount = 0;
+			glUniform1ui(diffMapCount_loc, 0);
+
+			builder.setShaders(shader, meshes[nd->mMeshes[n]]);
+			if (meshes[nd->mMeshes[n]].mat.texCount != 0) {
+				for (unsigned int i = 0; i < meshes[nd->mMeshes[n]].mat.texCount; ++i) {
+					if (meshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+						if (diffMapCount == 0) {
+							diffMapCount++;
+							GLint loc = glGetUniformLocation(shader->getProgramIndex(), "texUnitDiff");
+							glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i]);
+							glUniform1i(diffMapCount_loc, diffMapCount);
+						}
+					}
+				}
+			}
+			builder.drawMesh(meshes[nd->mMeshes[n]], shader);
+		}
+
+		for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+			carRecursiveDraw(scene, nd->mChildren[n], shader);
+		}
+
+	}
+
 	void drawCar(VSShaderLib *shader, Camera* camera) {
 		MeshBuilder builder;
-		builder.setShaders(shader, body);
 
 		//Preset Light and Camera information (view and prespective matrices)
 		setCarLightsAndCamera(camera, shader);
 
-		builder.drawMesh(body, shader);
+		carRecursiveDraw(scene, scene->mRootNode, shader);
 		popMatrix(MODEL);
-		for (int i = 0; i < tires.size(); i++) {
-			builder.setShaders(shader, tires.at(i));
-			pushMatrix(MODEL);
-			tireTransformations(i);
-			builder.drawMesh(tires.at(i), shader);
-			popMatrix(MODEL);
-		}
 	}
 
 };

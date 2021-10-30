@@ -44,6 +44,10 @@ in SpotLight spotlights[2];
 
 in vec4 pos;
 
+
+uniform int diffMapCount;
+uniform	sampler2D texUnitDiff;
+
 in Data {
 	vec3 normal;
 	vec3 eye;
@@ -144,12 +148,16 @@ void main() {
 		texel1 = texture(texmap1, DataIn.tex_coord);
 		colorOut = (diffuse + spec) * texel * texel1 + mat.ambient;
 	}
+
+	if(diffMapCount != 0 && diffMapCount == 1)
+		colorOut = (diffuse + spec) * texture(texUnitDiff, DataIn.tex_coord);
+
 	
 
 	vec3 colorRGB = vec3(colorOut);
 	vec3 fogColor = vec3(0.75, 0.75, 0.75);
 	vec3 finalColor = mix(fogColor, colorRGB, f);
-	
+	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 	//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
 
 	if(pause_on == 1) colorOut = vec4(vec3(colorOut)/3, colorOut.a);

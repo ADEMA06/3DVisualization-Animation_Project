@@ -72,6 +72,8 @@ public:
         glUniform1i(loc, mesh->mat.texCount);
         loc = glGetUniformLocation(shader->getProgramIndex(), "instanced");
         glUniform1i(loc, instanced);
+        GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+        glUniform1i(diffMapCount_loc, 0);
     }
 
     void setShaders(VSShaderLib* shader, MyMesh mesh) {
@@ -88,6 +90,8 @@ public:
         glUniform1i(loc, mesh.mat.texCount);
         loc = glGetUniformLocation(shader->getProgramIndex(), "instanced");
         glUniform1i(loc, 0);
+        GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+        glUniform1i(diffMapCount_loc, 0);
     }
 
     void setShadersInstances(VSShaderLib* shader, std::vector<vec3> offsets) {

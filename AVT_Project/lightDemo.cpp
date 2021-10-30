@@ -367,7 +367,7 @@ void renderScene(void) {
 
 
 	//World axis
-	/*for (int i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 
 		// send the material
 		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
@@ -401,7 +401,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 		objId++;
-	}*/
+	}
 
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
@@ -668,7 +668,7 @@ void init()
 	//Texture Object definition
 
 	glGenTextures(3, TextureArray);
-	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "lowPolyCharger/CarTexture1.png", 0);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "orange.jpg", 2);
 
