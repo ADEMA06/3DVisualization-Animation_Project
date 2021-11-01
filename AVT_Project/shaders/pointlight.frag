@@ -4,6 +4,7 @@ out vec4 colorOut;
 uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
+uniform sampler2D texmap3;
 
 uniform int pause_on;
 
@@ -144,9 +145,13 @@ void main() {
 		colorOut = (diffuse + spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 3){
-		texel = texture(texmap0, DataIn.tex_coord);
+		texel = texture(texmap3, DataIn.tex_coord);
 		texel1 = texture(texmap1, DataIn.tex_coord);
-		colorOut = (diffuse + spec) * texel * texel1 + mat.ambient;
+		colorOut = (diffuse + spec) *  texel1 * texel  + mat.ambient;
+	}
+	else if(mat.texCount == 4){
+		texel = texture(texmap0, DataIn.tex_coord);
+		colorOut = (diffuse + spec) * texel + mat.ambient;
 	}
 
 	if(diffMapCount != 0 && diffMapCount == 1)

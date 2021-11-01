@@ -63,6 +63,10 @@ public:
         this->bounding_box = AABB(min_pos, max_pos);
     }
 
+    void setBoundingBoxDebug() {
+        this->bounding_box.debugMode();
+    }
+
     void updateBoundingBox(vec3 offset) {
         this->bounding_box.updateBoundingBox(offset);
     }

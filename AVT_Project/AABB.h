@@ -1,7 +1,7 @@
 #ifndef __AABB_H__
 #define __AABB_H__
 
-#include "geometry.h"
+#include "MeshBuilder.h"
 
 
 /// The storage for matrices
@@ -14,6 +14,7 @@ extern float mNormal3x3[9];
 class AABB{
     std::vector<vec3> vertices;
     std::vector<vec3> backup;
+    struct MyMesh cube;
     vec3 min_pos, max_pos;
     bool colliding;
 
@@ -35,6 +36,18 @@ public:
         backup = vertices;
         colliding = false;
         
+    }
+
+    void debugMode() {
+        MeshBuilder builder;
+        float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+        float diff[] = { 0.8f, 0.6f, 0.4f, 0.5f };
+        float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+        float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        float shininess = 100.0f;
+        int texcount = 0;
+        this->cube = createCube();
+        this->cube = builder.setMesh(cube, amb, diff, spec, emissive, shininess, texcount, vec3(0.0f, 0.0f, 0.0f));
     }
 
     bool checkCollision(AABB bounding_box) {
@@ -118,6 +131,19 @@ public:
 
     void setColliding(bool val) {
         this->colliding = val;
+    }
+
+    void draw(VSShaderLib* shader, float* transformations) {
+        MeshBuilder builder;
+        pushMatrix(MODEL);
+        builder.setShaders(shader, cube);
+        float scale_x = max_pos.x - min_pos.x;
+        float scale_y = max_pos.y - min_pos.y;
+        float scale_z = max_pos.z - min_pos.z;
+        translate(MODEL, min_pos.x, min_pos.y, min_pos.z);
+        scale(MODEL, scale_x, scale_y, scale_z);
+        builder.drawMesh(cube, shader);
+        popMatrix(MODEL);
     }
 
 

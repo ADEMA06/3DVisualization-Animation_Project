@@ -121,8 +121,8 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
-GLint tex_loc0, tex_loc1, tex_loc2;
-GLuint TextureArray[3];
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
+GLuint TextureArray[4];
 
 
 // Camera Position
@@ -235,7 +235,6 @@ void setCameraTarget() {
 
 void drawObjects() {
 	car.update(dt);
-
 	for (int i = 0; i < oranges.size(); i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
@@ -269,7 +268,7 @@ void drawObjects() {
 		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
 	butter.update(dt);
-
+	
 	car.drawCar(shader, cameras[2]);
 	
 	vec3 camera_pos = cameras[2]->getPosition();
@@ -279,8 +278,9 @@ void drawObjects() {
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader);
 	}
+	
 	table.drawTable(shader);
-
+	
 	for (int i = 0; i < oranges.size(); i++) {
 		oranges.at(i).updateSpeed(t);
 		oranges.at(i).drawOrange(shader);
@@ -354,9 +354,13 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
+	glUniform1i(tex_loc3, 3);
 
 	glUniform1i(pause_on_Id, keys['s']);
 
@@ -582,6 +586,7 @@ GLuint setupShaders() {
 	tex_loc0 = glGetUniformLocation(shader->getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader->getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader->getProgramIndex(), "texmap2");
+	tex_loc3 = glGetUniformLocation(shader->getProgramIndex(), "texmap3");
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader->getAllInfoLogs().c_str());
 
 	shaderText->init();
@@ -667,10 +672,11 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(3, TextureArray);
+	glGenTextures(4, TextureArray);
 	Texture2D_Loader(TextureArray, "lowPolyCharger/CarTexture1.png", 0);
-	Texture2D_Loader(TextureArray, "lightwood.tga", 1);
+	Texture2D_Loader(TextureArray, "stone.tga", 1);
 	Texture2D_Loader(TextureArray, "orange.jpg", 2);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 3);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -730,9 +736,8 @@ void init()
 	candles.push_back(candle5);
 	candles.push_back(candle6);
 
-
-	table.createTable();
 	car.createCar();
+	table.createTable();
 	butter.createButter();
 
 	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);

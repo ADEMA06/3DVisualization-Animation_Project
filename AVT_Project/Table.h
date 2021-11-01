@@ -2,13 +2,19 @@
 #define __TABLE_H__
 
 #include <string>
+#include <fstream>
 #include "MeshBuilder.h"
+#include "AssimpMesh.h"
 #include "StaticObject.h"
+
+extern char model_dir[50];
 
 class Table : public StaticObject {
 	//Meshes
 	struct MyMesh base;
 	std::vector<struct MyMesh> legs;
+	std::vector<struct MyMesh> meshes;
+	const aiScene* tableScene = NULL;
 
 	//Dimensions
 	float width;
@@ -49,6 +55,50 @@ public:
 				legs.push_back(amesh);
 			}
 		}
+		std::string filepath;
+		strcpy(model_dir, "Volcano");
+		while (true) {
+
+			std::ostringstream oss;
+			oss << model_dir << "/" << model_dir << ".obj";;
+			filepath = oss.str();   //path of OBJ file in the VS project
+
+			strcat(model_dir, "/");
+			//check if file exists
+			std::ifstream fin(filepath.c_str());
+			if (!fin.fail()) {
+				fin.close();
+				break;
+			}
+			else
+				printf("Couldn't open file: %s\n", filepath.c_str());
+		}
+		tableScene = Import3DFromFile(filepath, tableScene, &vec3(), &vec3());
+		meshes = createMeshFromAssimp(tableScene);
+
+	}
+
+	void tableRecursiveDraw(aiNode* nd, VSShaderLib* shader) {
+		MeshBuilder builder;
+		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+		for (int n = 0; n < meshes.size(); ++n) {
+			int diffMapCount = 0;
+			glUniform1ui(diffMapCount_loc, 0);
+			builder.setShaders(shader, meshes[n]);
+			if (meshes[n].mat.texCount != 0) {
+				for (unsigned int i = 0; i < meshes[n].mat.texCount; ++i) {
+					if (meshes[n].texTypes[i] == DIFFUSE) {
+						if (diffMapCount == 0) {
+							diffMapCount++;
+							GLint loc = glGetUniformLocation(shader->getProgramIndex(), "texUnitDiff");
+							glUniform1i(loc, meshes[n].texUnits[i]);
+							glUniform1i(diffMapCount_loc, diffMapCount);
+						}
+					}
+				}
+			}
+			builder.drawMesh(meshes[n], shader);
+		}
 	}
 
 	void drawTable(VSShaderLib *shader) {
@@ -59,6 +109,12 @@ public:
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);
 		scale(MODEL, width, thickness, height);
 		builder.drawMesh(base, shader);
+		popMatrix(MODEL);
+
+		pushMatrix(MODEL);
+		translate(MODEL, width / 3, 0.0f, width/3);
+		scale(MODEL, 10.0f, 10.0f, 10.0f);
+		//tableRecursiveDraw(tableScene->mRootNode, shader);
 		popMatrix(MODEL);
 
 

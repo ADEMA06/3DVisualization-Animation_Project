@@ -27,14 +27,11 @@ using namespace std;
 // Create an instance of the Importer class
 Assimp::Importer importer;
 // the global Assimp scene object
-const aiScene* scene = NULL;
 // scale factor for the Assimp model to fit in the window
 float scaleFactor;
 
 /* Directory name containing the OBJ file. The OBJ filename should be the same*/
 extern char model_dir[50];
-extern vec3 min_aabb;
-extern vec3 max_aabb;
 
 
 // unordered map which maps image filenames to texture units TU. This map is filled in the  LoadGLTexturesTUs()
@@ -44,7 +41,7 @@ unordered_map<std::string, GLuint> textureIdMap;
 #define aisgl_min(x,y) (x<y?x:y)
 #define aisgl_max(x,y) (y>x?y:x)
 
-void get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max)
+void get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max, const aiScene* scene)
 {
 	aiMatrix4x4 prev;
 	unsigned int n = 0, t;
@@ -66,20 +63,20 @@ void get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* ma
 	}
 
 	for (n = 0; n < nd->mNumChildren; ++n) {
-		get_bounding_box_for_node(nd->mChildren[n], min, max);
+		get_bounding_box_for_node(nd->mChildren[n], min, max, scene);
 	}
 }
 
 
-void get_bounding_box(aiVector3D* min, aiVector3D* max)
+void get_bounding_box(aiVector3D* min, aiVector3D* max, const aiScene* scene)
 {
 
 	min->x = min->y = min->z = 1e10f;
 	max->x = max->y = max->z = -1e10f;
-	get_bounding_box_for_node(scene->mRootNode, min, max);
+	get_bounding_box_for_node(scene->mRootNode, min, max, scene);
 }
 
-bool Import3DFromFile(const std::string& pFile)
+const aiScene* Import3DFromFile(const std::string& pFile, const aiScene* scene, vec3* max_vertex, vec3* min_vertex)
 {
 
 	scene = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Quality);
@@ -88,16 +85,20 @@ bool Import3DFromFile(const std::string& pFile)
 	if (!scene)
 	{
 		printf("%s\n", importer.GetErrorString());
-		return false;
+		return NULL;
 	}
 
 	// Now we can access the file's contents.
 	printf("Import of scene %s succeeded.\n", pFile.c_str());
 
 	aiVector3D scene_min, scene_max, scene_center;
-	get_bounding_box(&scene_min, &scene_max);
-	min_aabb = vec3(scene_min.x, scene_min.y, scene_min.z);
-	max_aabb = vec3(scene_max.x, scene_max.y, scene_max.z);
+	get_bounding_box(&scene_min, &scene_max, scene);
+	max_vertex->x = scene_max.x;
+	max_vertex->y = scene_max.y;
+	max_vertex->z = scene_max.z;
+	min_vertex->x = scene_min.x;
+	min_vertex->y = scene_min.y;
+	min_vertex->z = scene_min.z;
 
 	float tmp;
 	tmp = scene_max.x - scene_min.x;
@@ -106,7 +107,7 @@ bool Import3DFromFile(const std::string& pFile)
 	scaleFactor = 1.f / tmp;
 
 	// We're done. Everything will be cleaned up by the importer destructor
-	return true;
+	return scene;
 }
 
 

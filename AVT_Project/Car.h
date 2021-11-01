@@ -23,7 +23,6 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 /// The normal matrix
 extern float mNormal3x3[9];
 
-extern const aiScene* scene;
 vec3 min_aabb;
 vec3 max_aabb;
 
@@ -34,6 +33,8 @@ class Car : public MovableObject {
     std::vector<struct MyMesh> meshes;
 	vec4 body_color;
 	vec4 tires_color;
+
+	const aiScene* carScene = NULL;
 
 	//Movement details
     float max_speed;
@@ -51,7 +52,7 @@ class Car : public MovableObject {
 	//Vector moved after update
 	vec3 offset;
 
-	int lives = 1;
+	int lives = 100;
 	float points = 0;
 
 public:
@@ -114,6 +115,7 @@ public:
 		vec3 min_pos = vec3(- car_width / 2, - car_height / 2, - car_thickness / 2);
 		vec3 max_pos = vec3(car_width / 2, car_height / 2, car_thickness / 2);
 		setBoundingBox(min_aabb, max_aabb);
+		setBoundingBoxDebug();
 	}
 
 	void goForward(float dt) {
@@ -160,7 +162,7 @@ public:
 
 	void createCar() {
 		MeshBuilder builder;
-
+		strcpy(model_dir, "lowPolyCharger");
 		std::string filepath;
 		while (true) {
 
@@ -179,17 +181,23 @@ public:
 				printf("Couldn't open file: %s\n", filepath.c_str());
 		}
 		//creation of Mymesh array with VAO Geometry and Material
-		if (!Import3DFromFile(filepath))
+		carScene = Import3DFromFile(filepath, carScene, &max_aabb, &min_aabb);
+		if (!carScene)
 			return;
 		setBoundingBox(min_aabb, max_aabb);
-		meshes = createMeshFromAssimp(scene);
+		meshes = createMeshFromAssimp(carScene);
 
-		float max_x = max_aabb.x*0.6f;
-		float max_z = max_aabb.z*0.6f;
-		float min_z = min_aabb.z*0.6f;
+		for (int i = 0; i < meshes.size(); i++) {
+			meshes[i].mat.texCount = 4;
+		}
+
+		float max_x = max_aabb.x*0.4f;
+		float max_z = max_aabb.z*0.4f;
+		float min_z = min_aabb.z*0.4f;
 
 		spotlight1.position = vec4(max_x, 0.15f, min_z+0.1f, 1.0f);
 		spotlight2.position = vec4(max_x, 0.15f, max_z-0.1f, 1.0f);
+		setBoundingBoxDebug();
 	}
 
 	bool checkCollision(AABB collision) {
@@ -212,7 +220,7 @@ public:
 		rotate(MODEL, getDirectionAngle(), 0.0f, 1.0f, 0.0f);
 		multMatrix(cam_transformations, get(MODEL));
 		rotate(MODEL, 180.0f, 0.0f, 1.0f, 0.0f);
-		scale(MODEL, 0.6f, 0.6f, 0.6f);
+		scale(MODEL, 0.4f, 0.4f, 0.4f);
 		multMatrix(body_transformations, get(MODEL));
 	}
 
@@ -272,40 +280,36 @@ public:
 	void carRecursiveDraw(const aiScene* scene, aiNode* nd, VSShaderLib* shader) {
 		MeshBuilder builder;
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
-		for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+		for (unsigned int n = 0; n < meshes.size(); ++n) {
 			int diffMapCount = 0;
 			glUniform1ui(diffMapCount_loc, 0);
 
-			builder.setShaders(shader, meshes[nd->mMeshes[n]]);
-			if (meshes[nd->mMeshes[n]].mat.texCount != 0) {
-				for (unsigned int i = 0; i < meshes[nd->mMeshes[n]].mat.texCount; ++i) {
-					if (meshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+			builder.setShaders(shader, meshes[n]);
+			if (meshes[n].mat.texCount != 0) {
+				for (unsigned int i = 0; i < meshes[n].mat.texCount; ++i) {
+					if (meshes[n].texTypes[i] == DIFFUSE) {
 						if (diffMapCount == 0) {
 							diffMapCount++;
 							GLint loc = glGetUniformLocation(shader->getProgramIndex(), "texUnitDiff");
-							glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i]);
+							glUniform1i(loc, meshes[n].texUnits[i]);
 							glUniform1i(diffMapCount_loc, diffMapCount);
 						}
 					}
 				}
 			}
-			builder.drawMesh(meshes[nd->mMeshes[n]], shader);
-		}
-
-		for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
-			carRecursiveDraw(scene, nd->mChildren[n], shader);
+			builder.drawMesh(meshes[n], shader);
 		}
 
 	}
 
 	void drawCar(VSShaderLib *shader, Camera* camera) {
 		MeshBuilder builder;
-
 		//Preset Light and Camera information (view and prespective matrices)
 		setCarLightsAndCamera(camera, shader);
-
-		carRecursiveDraw(scene, scene->mRootNode, shader);
+		carRecursiveDraw(carScene, carScene->mRootNode, shader);
 		popMatrix(MODEL);
+		updateBoundingBox(body_transformations);
+		getBoundingBox().draw(shader, cam_transformations);
 	}
 
 };
