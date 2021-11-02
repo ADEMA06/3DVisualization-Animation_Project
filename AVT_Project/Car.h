@@ -160,7 +160,7 @@ public:
 		updateBoundingBox(body_transformations);
 	}
 
-	void createCar() {
+	void createCar(GLuint *textures, int offset) {
 		MeshBuilder builder;
 		strcpy(model_dir, "lowPolyCharger");
 		std::string filepath;
@@ -185,7 +185,7 @@ public:
 		if (!carScene)
 			return;
 		setBoundingBox(min_aabb, max_aabb);
-		meshes = createMeshFromAssimp(carScene);
+		meshes = createMeshFromAssimp(carScene, textures, offset);
 
 		for (int i = 0; i < meshes.size(); i++) {
 			meshes[i].mat.texCount = 4;
@@ -277,7 +277,7 @@ public:
 		//---------------------------------------------------------------------------------------------------
 	}
 
-	void carRecursiveDraw(const aiScene* scene, aiNode* nd, VSShaderLib* shader) {
+	void carRecursiveDraw(const aiScene* scene, aiNode* nd, VSShaderLib* shader, int offset, GLuint *textures) {
 		MeshBuilder builder;
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
 		for (unsigned int n = 0; n < meshes.size(); ++n) {
@@ -290,6 +290,8 @@ public:
 					if (meshes[n].texTypes[i] == DIFFUSE) {
 						if (diffMapCount == 0) {
 							diffMapCount++;
+							glActiveTexture(GL_TEXTURE0 + offset);
+							glBindTexture(GL_TEXTURE_2D, textures[offset]);
 							GLint loc = glGetUniformLocation(shader->getProgramIndex(), "texUnitDiff");
 							glUniform1i(loc, meshes[n].texUnits[i]);
 							glUniform1i(diffMapCount_loc, diffMapCount);
@@ -302,11 +304,11 @@ public:
 
 	}
 
-	void drawCar(VSShaderLib *shader, Camera* camera) {
+	void drawCar(VSShaderLib *shader, Camera* camera, int offset, GLuint *textures) {
 		MeshBuilder builder;
 		//Preset Light and Camera information (view and prespective matrices)
 		setCarLightsAndCamera(camera, shader);
-		carRecursiveDraw(carScene, carScene->mRootNode, shader);
+		carRecursiveDraw(carScene, carScene->mRootNode, shader, offset, textures);
 		popMatrix(MODEL);
 		updateBoundingBox(body_transformations);
 		getBoundingBox().draw(shader, cam_transformations);

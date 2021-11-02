@@ -7,4 +7,4 @@
 #include <vector>
 
 const aiScene* Import3DFromFile(const std::string& pFile, const aiScene* sc, vec3* max_vertex, vec3* min_vertex);
-std::vector<struct MyMesh> createMeshFromAssimp(const aiScene* sc);
+std::vector<struct MyMesh> createMeshFromAssimp(const aiScene* sc, GLuint* textures, int offset);

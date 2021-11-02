@@ -111,7 +111,7 @@ const aiScene* Import3DFromFile(const std::string& pFile, const aiScene* scene, 
 }
 
 
-bool LoadGLTexturesTUs(const aiScene* scene)  // Create OGL textures objects and maps them to texture units.  
+bool LoadGLTexturesTUs(const aiScene* scene, GLuint *textures, int offset)  // Create OGL textures objects and maps them to texture units.  
 {
 	aiString path;	// filename
 	string filename;
@@ -159,8 +159,8 @@ bool LoadGLTexturesTUs(const aiScene* scene)  // Create OGL textures objects and
 		for (int i = 0; itr != textureIdMap.end(); ++i, ++itr)
 		{
 			filename = (*itr).first;  // get filename
-			glActiveTexture(GL_TEXTURE0 + i);
-			Texture2D_Loader(textureIds, filename.c_str(), i);  //it already performs glBindTexture(GL_TEXTURE_2D, textureIds[i])
+			glActiveTexture(GL_TEXTURE0 + i + offset);
+			Texture2D_Loader(textures, filename.c_str(), i + offset);  //it already performs glBindTexture(GL_TEXTURE_2D, textureIds[i])
 			(*itr).second = i;	  // save texture unit for filename in map
 			//printf("textura = %s  TU = %d\n", filename.c_str(), i);
 		}
@@ -193,7 +193,7 @@ void color4_to_float4(const aiColor4D* c, float f[4])
 	f[3] = c->a;
 }
 
-vector<struct MyMesh> createMeshFromAssimp(const aiScene* sc) {
+vector<struct MyMesh> createMeshFromAssimp(const aiScene* sc, GLuint *textures, int offset) {
 
 	vector<struct MyMesh> myMeshes;
 	struct MyMesh aMesh;
@@ -201,7 +201,7 @@ vector<struct MyMesh> createMeshFromAssimp(const aiScene* sc) {
 
 	printf("Cena: numero total de malhas = %d\n", sc->mNumMeshes);
 
-	LoadGLTexturesTUs(sc); //it creates the unordered map which maps image filenames to texture units TU
+	LoadGLTexturesTUs(sc, textures, offset); //it creates the unordered map which maps image filenames to texture units TU
 
 	// For each mesh
 	for (unsigned int n = 0; n < sc->mNumMeshes; ++n)
@@ -304,7 +304,7 @@ vector<struct MyMesh> createMeshFromAssimp(const aiScene* sc) {
 			filename.append(texPath.data);
 			TU = textureIdMap[filename];
 
-			aMesh.texUnits[TUcount] = TU;
+			aMesh.texUnits[TUcount] = TU + offset;
 			aMesh.texTypes[TUcount] = DIFFUSE;
 			aMesh.mat.texCount = TUcount + 1;
 			TUcount++;

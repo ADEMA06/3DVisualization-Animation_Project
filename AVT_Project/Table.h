@@ -34,7 +34,7 @@ public:
 		this->legHeight = legHeight;
 	}
 
-	void createTable() {
+	void createTable(GLuint *textures, int offset) {
 		MeshBuilder builder;
 
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -74,11 +74,11 @@ public:
 				printf("Couldn't open file: %s\n", filepath.c_str());
 		}
 		tableScene = Import3DFromFile(filepath, tableScene, &vec3(), &vec3());
-		meshes = createMeshFromAssimp(tableScene);
+		meshes = createMeshFromAssimp(tableScene, textures, offset);
 
 	}
 
-	void tableRecursiveDraw(aiNode* nd, VSShaderLib* shader) {
+	void tableRecursiveDraw(aiNode* nd, VSShaderLib* shader, GLuint *textures, int offset) {
 		MeshBuilder builder;
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
 		for (int n = 0; n < meshes.size(); ++n) {
@@ -90,6 +90,8 @@ public:
 					if (meshes[n].texTypes[i] == DIFFUSE) {
 						if (diffMapCount == 0) {
 							diffMapCount++;
+							glActiveTexture(GL_TEXTURE0 + offset);
+							glBindTexture(GL_TEXTURE_2D, textures[offset]);
 							GLint loc = glGetUniformLocation(shader->getProgramIndex(), "texUnitDiff");
 							glUniform1i(loc, meshes[n].texUnits[i]);
 							glUniform1i(diffMapCount_loc, diffMapCount);
@@ -101,7 +103,7 @@ public:
 		}
 	}
 
-	void drawTable(VSShaderLib *shader) {
+	void drawTable(VSShaderLib *shader, GLuint *textures, int offset) {
 		MeshBuilder builder;
 		builder.setShaders(shader, base);
 		pushMatrix(MODEL);
@@ -114,7 +116,7 @@ public:
 		pushMatrix(MODEL);
 		translate(MODEL, width / 3, 0.0f, width/3);
 		scale(MODEL, 10.0f, 10.0f, 10.0f);
-		//tableRecursiveDraw(tableScene->mRootNode, shader);
+		tableRecursiveDraw(tableScene->mRootNode, shader, textures, offset);
 		popMatrix(MODEL);
 
 

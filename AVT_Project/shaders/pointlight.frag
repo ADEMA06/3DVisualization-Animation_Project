@@ -145,8 +145,8 @@ void main() {
 		colorOut = (diffuse + spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 3){
-		texel = texture(texmap3, DataIn.tex_coord);
-		texel1 = texture(texmap1, DataIn.tex_coord);
+		texel = texture(texmap2, DataIn.tex_coord);
+		texel1 = texture(texmap0, DataIn.tex_coord);
 		colorOut = (diffuse + spec) *  texel1 * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 4){
