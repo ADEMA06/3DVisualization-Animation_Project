@@ -242,7 +242,10 @@ public:
 		vec3 up(0, 1, 0);
 		camera->setTransformations(cam_transformations);
 		if (current_camera == 2) {
-			camera->lookAtPoint({ getPosition().x, getPosition().y, getPosition().z }, up);
+			camera->lookAtPoint({ getPosition().x, getPosition().y+0.3f, getPosition().z }, up);
+		}
+		else if (current_camera == 3) {
+			camera->lookAtPoint({ getPosition().x+0.2f, getPosition().y+0.3f, getPosition().z }, up);
 		}
 
 		//Obtain spotlight positions and directions in eye coordinates--------------------------------------
@@ -299,18 +302,26 @@ public:
 					}
 				}
 			}
+			if(n != meshes.size() - 1)
 			builder.drawMesh(meshes[n], shader);
 		}
 
 	}
 
-	void drawCar(VSShaderLib *shader, Camera* camera, int offset, GLuint *textures) {
+	float* getCamTransformations() {
+		return cam_transformations;
+	}
+
+	void drawCar(VSShaderLib *shader, Camera* camera) {
 		MeshBuilder builder;
 		//Preset Light and Camera information (view and prespective matrices)
 		setCarLightsAndCamera(camera, shader);
 		carRecursiveDraw(carScene, carScene->mRootNode, shader, offset, textures);
 		popMatrix(MODEL);
 		updateBoundingBox(body_transformations);
+	}
+
+	void drawBoundingBox(VSShaderLib* shader) {
 		getBoundingBox().draw(shader, cam_transformations);
 	}
 

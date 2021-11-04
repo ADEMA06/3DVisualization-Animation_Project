@@ -41,7 +41,7 @@ public:
     void debugMode() {
         MeshBuilder builder;
         float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-        float diff[] = { 0.8f, 0.6f, 0.4f, 0.5f };
+        float diff[] = { 1.0f, 0.0f, 0.0f, 0.8f };
         float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
         float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
         float shininess = 100.0f;

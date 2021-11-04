@@ -131,7 +131,7 @@ public:
 			float dot = camera_direction.dot(n_dir);
 
 			if (!culling) {
-				dist = 49;
+				dist = 1;
 				dot = 0.51;
 			}
 			if (dist < 50 && dot > 0.5) {

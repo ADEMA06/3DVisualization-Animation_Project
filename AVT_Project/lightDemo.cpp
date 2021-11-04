@@ -93,7 +93,7 @@ textToRender* game_over;
 bool isGameOver;
 
 int current_camera = 0;
-Camera* cameras[3];
+Camera* cameras[4];
 
 VSShaderLib *shader = new VSShaderLib();
 VSShaderLib *shaderText = new VSShaderLib();
@@ -105,6 +105,8 @@ HUD hud;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+
+struct MyMesh helpCube;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -228,7 +230,7 @@ void setCameraTarget() {
 	if (cameraPos.x == 0.0f && cameraPos.y != 0.0f && cameraPos.z == 0.0f) {
 		up = vec3(0, 0, 1);
 	}
-	if (current_camera != 2) {
+	if (current_camera != 2 && current_camera != 3) {
 		cameras[current_camera]->lookAtPoint({ 0, 0, 0 }, up);
 	}
 }
@@ -262,14 +264,21 @@ void drawObjects() {
 		}
 		cheerio->update(dt);
 	}
-
+	
 	if (car.checkCollision(butter.getBoundingBox())) {
 		car.setPoints(car.getPoints() - 20);
 		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
 	butter.update(dt);
 	
-	car.drawCar(shader, cameras[2], 3, TextureArray);
+	glDisable(GL_CULL_FACE);
+	if (current_camera == 3) {
+		car.drawCar(shader, cameras[3]);
+	}
+	else {
+		car.drawCar(shader, cameras[2]);
+	}
+	glEnable(GL_CULL_FACE);
 	
 	vec3 camera_pos = cameras[2]->getPosition();
 	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
@@ -286,10 +295,10 @@ void drawObjects() {
 		oranges.at(i).drawOrange(shader);
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
-	butter.drawButter(shader);
 
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
-
+	butter.drawButter(shader);
+	//car.drawBoundingBox(shader);
 	
 }
 
@@ -332,7 +341,7 @@ void renderScene(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
@@ -365,10 +374,25 @@ void renderScene(void) {
 	glUniform1i(pause_on_Id, keys['s']);
 
 	int objId = 0;
+
+	glStencilMask(0x00);
 	drawObjects();
+	
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	/*glStencilMask(0xFF);
+	glStencilFunc(GL_NEVER, 1, 0x1);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	butter.drawButter(shader);
+
+	glStencilFunc(GL_EQUAL, 1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	pushMatrix(MODEL);
+	scale(MODEL, 1.0f, 1.0f, 1.0f);
+	drawObjects();
+	popMatrix(MODEL);*/
+
 	setLights();
-
-
 
 	//World axis
 	for (int i = 0; i < 3; ++i) {
@@ -417,6 +441,7 @@ void renderScene(void) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
 	glutSwapBuffers();
 }
 
@@ -449,6 +474,7 @@ void processKeys(unsigned char key, int xx, int yy)
 	case '1': current_camera = 0; cameras[current_camera]->setViewPort(WinX, WinY); break;
 	case '2': current_camera = 1; cameras[current_camera]->setViewPort(WinX, WinY); break;
 	case '3': current_camera = 2; cameras[current_camera]->setViewPort(WinX, WinY); break;
+	case '4': current_camera = 3; cameras[current_camera]->setViewPort(WinX, WinY); break;
 
 		// Car movement keys
 	case 'q': keys['q'] = true; break;
@@ -780,6 +806,9 @@ void init()
 	float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
 	setMesh(amesh, green, green, spec, emissive, shininess, texcount);
 
+	helpCube = createCube();
+	setMesh(helpCube, red, red, spec, emissive, shininess, texcount);
+
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -829,12 +858,15 @@ int main(int argc, char** argv) {
 	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f, -55.0f);
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
 	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
+	PerspectiveCamera camera4({ -0.2f, 0.0f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
+	camera4.setSphericCoords(vec3(-0.4f, 0.4f, 0.01f));
 
 	currentPosition = vec3(-4, 1, 1);
 
 	cameras[0] = &camera1;
 	cameras[1] = &camera2;
 	cameras[2] = &camera3;
+	cameras[3] = &camera4;
 
 	//  GLUT initialization
 	glutInit(&argc, argv);
