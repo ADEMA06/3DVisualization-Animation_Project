@@ -157,6 +157,17 @@ vec3 currentPosition;
 
 void resetGame();
 
+//---------------Particles-------------------
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posição
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // aceleração
+} Particle;
+//-------------------------------------------
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -273,10 +284,10 @@ void drawObjects() {
 	
 	glDisable(GL_CULL_FACE);
 	if (current_camera == 3) {
-		car.drawCar(shader, cameras[3]);
+		car.drawCar(shader, cameras[3], 3, TextureArray);
 	}
 	else {
-		car.drawCar(shader, cameras[2]);
+		car.drawCar(shader, cameras[2], 3, TextureArray);
 	}
 	glEnable(GL_CULL_FACE);
 	
@@ -341,6 +352,7 @@ void renderScene(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	FrameCount++;
+	glClearStencil(0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
@@ -374,23 +386,17 @@ void renderScene(void) {
 	glUniform1i(pause_on_Id, keys['s']);
 
 	int objId = 0;
-
-	glStencilMask(0x00);
+	
+	glStencilMask(0);
 	drawObjects();
 	
-	glClear(GL_STENCIL_BUFFER_BIT);
-
-	/*glStencilMask(0xFF);
-	glStencilFunc(GL_NEVER, 1, 0x1);
-	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-	butter.drawButter(shader);
-
-	glStencilFunc(GL_EQUAL, 1, 0x1);
+	glStencilFunc(GL_EQUAL, 1, 1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	pushMatrix(MODEL);
-	scale(MODEL, 1.0f, 1.0f, 1.0f);
+	scale(MODEL, -1.0f, 1.0f, 1.0f);
 	drawObjects();
-	popMatrix(MODEL);*/
+	popMatrix(MODEL);
+
 
 	setLights();
 
@@ -441,7 +447,6 @@ void renderScene(void) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
 	glutSwapBuffers();
 }
 
@@ -816,6 +821,8 @@ void init()
 	glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //may need to remove this
 	glEnable(GL_BLEND);
+	glEnable(GL_STENCIL_TEST);
+
 
 }
 

@@ -283,7 +283,7 @@ public:
 	void carRecursiveDraw(const aiScene* scene, aiNode* nd, VSShaderLib* shader, int offset, GLuint *textures) {
 		MeshBuilder builder;
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
-		for (unsigned int n = 0; n < meshes.size(); ++n) {
+		for (unsigned int n = 0; n < meshes.size() - 1; ++n) {
 			int diffMapCount = 0;
 			glUniform1ui(diffMapCount_loc, 0);
 
@@ -302,9 +302,14 @@ public:
 					}
 				}
 			}
-			if(n != meshes.size() - 1)
 			builder.drawMesh(meshes[n], shader);
 		}
+		glStencilMask(1);
+		glStencilFunc(GL_NEVER, 1, 1);
+		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+		builder.setShaders(shader, meshes[meshes.size() - 1]);
+		builder.drawMesh(meshes[meshes.size() - 1], shader);
+		glStencilFunc(GL_ALWAYS, 1, 1);
 
 	}
 
@@ -312,7 +317,7 @@ public:
 		return cam_transformations;
 	}
 
-	void drawCar(VSShaderLib *shader, Camera* camera) {
+	void drawCar(VSShaderLib *shader, Camera* camera, int offset, GLuint *textures) {
 		MeshBuilder builder;
 		//Preset Light and Camera information (view and prespective matrices)
 		setCarLightsAndCamera(camera, shader);
