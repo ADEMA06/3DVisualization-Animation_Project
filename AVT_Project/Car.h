@@ -245,8 +245,11 @@ public:
 			camera->lookAtPoint({ getPosition().x, getPosition().y+0.3f, getPosition().z }, up);
 		}
 		if (repeated) {
-		    rearview->setTransformations(cam_transformations);
-			rearview->lookAtPoint({ getPosition().x, getPosition().y , getPosition().z }, up);
+			float target[4] = { -1.0f, 0.0f, 0.0f, 1.0f };
+			float transform_target[4];
+			multMatrixPoint(body_transformations, target, transform_target);
+			rearview->setTransformations(cam_transformations);
+			rearview->lookAtPoint(vec3(transform_target[0], transform_target[1], transform_target[2]), up);
 		}
 	
 		//Obtain spotlight positions and directions in eye coordinates--------------------------------------
