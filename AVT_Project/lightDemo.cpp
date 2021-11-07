@@ -157,6 +157,17 @@ vec3 currentPosition;
 
 void resetGame();
 
+//---------------Particles-------------------
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posição
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // aceleração
+} Particle;
+//-------------------------------------------
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -332,6 +343,7 @@ void renderScene(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	FrameCount++;
+	glClearStencil(0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
@@ -415,7 +427,6 @@ void renderScene(void) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
 	glutSwapBuffers();
 }
 
@@ -790,6 +801,8 @@ void init()
 	glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //may need to remove this
 	glEnable(GL_BLEND);
+	glEnable(GL_STENCIL_TEST);
+
 
 }
 
