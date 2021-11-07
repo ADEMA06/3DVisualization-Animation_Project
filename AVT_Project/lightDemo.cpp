@@ -380,10 +380,10 @@ void renderScene(void) {
 	pushMatrix(VIEW);
 	glDisable(GL_CULL_FACE);
 	if (current_camera == 3) {
-		car.drawRearView(shader, cameras[3], 3, TextureArray, false, cameras[4]);
+		car.drawCar(shader, cameras[3], 3, TextureArray, false, cameras[4]);
 	}
 	else {
-		car.drawRearView(shader, cameras[2], 3, TextureArray, false, cameras[4]);
+		car.drawCar(shader, cameras[2], 3, TextureArray, false, NULL);
 	}
 	glEnable(GL_CULL_FACE);
 
@@ -403,15 +403,11 @@ void renderScene(void) {
 	pushMatrix(PROJECTION);
 	cameras[4]->setViewPort(WinX, WinY);
 	if (current_camera == 3) {
-		car.drawRearView(shader, cameras[3], 3, TextureArray, true, cameras[4]);
-	}
-	else {
-		car.drawRearView(shader, cameras[2], 3, TextureArray, true, cameras[4]);
+		car.drawCar(shader, cameras[3], 3, TextureArray, true, cameras[4]);
+		drawObjects(true);
+		setLights();
 	}
 	glEnable(GL_CULL_FACE);
-
-	drawObjects(true);
-	setLights();
 	popMatrix(VIEW);
 	popMatrix(PROJECTION);
 	glStencilFunc(GL_ALWAYS, 1, 0x1);

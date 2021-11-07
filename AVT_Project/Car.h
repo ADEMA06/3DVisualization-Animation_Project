@@ -244,7 +244,7 @@ public:
 		if ((current_camera == 2 || current_camera == 3) && !repeated) {
 			camera->lookAtPoint({ getPosition().x, getPosition().y+0.3f, getPosition().z }, up);
 		}
-		if (repeated) {
+		if (repeated && rearview) {
 			float target[4] = { -1.0f, 0.0f, 0.0f, 1.0f };
 			float transform_target[4];
 			multMatrixPoint(body_transformations, target, transform_target);
@@ -318,39 +318,61 @@ public:
 		return cam_transformations;
 	}
 
-	void drawRearView(VSShaderLib* shader, Camera* camera, int offset, GLuint* textures, bool repeated, Camera* rearview) {
+	void drawCar(VSShaderLib* shader, Camera* camera, int offset, GLuint* textures, bool repeated, Camera* rearview) {
 		MeshBuilder builder;
 		//Preset Light and Camera information (view and prespective matrices)
 		setCarLightsAndCamera(camera, shader, repeated, rearview);
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
 
-		if (!repeated) {
-			glStencilFunc(GL_NEVER, 1, 0x1);
-			glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-			meshes[meshes.size() - 1].mat.diffuse[3] = 1.0f;
-			pushMatrix(MODEL);
-			meshes[meshes.size() - 1].mat.diffuse[3] = 1.0f;
-			translate(MODEL, 0.0f, 0.23f, 0.0f);
-			scale(MODEL, 1.0f, 0.8f, 1.0f);
-			builder.drawMesh(meshes[meshes.size() - 1], shader);
-			popMatrix(MODEL);
-			glStencilFunc(GL_EQUAL, 0, 0x1);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-			pushMatrix(MODEL);
-			meshes[meshes.size() - 1].mat.diffuse[3] = 1.0f;
-			scale(MODEL, 1.0f, 1.0f, 1.2f);
-			builder.drawMesh(meshes[meshes.size() - 1], shader);
-			popMatrix(MODEL);
+		if (!repeated && rearview) {
+			drawRearView(shader);
 		}
+		drawScaledRearView(shader);
 		glDisable(GL_CULL_FACE);
 		carRecursiveDraw(carScene, carScene->mRootNode, shader, offset, textures);
 		glEnable(GL_CULL_FACE);
 		popMatrix(MODEL);
 		updateBoundingBox(body_transformations);
+		if (repeated) {
+			glStencilFunc(GL_EQUAL, 1, 0x1);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		} 
+		else {
+			glStencilFunc(GL_EQUAL, 0, 0x1);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		}
 	}
 
 	void drawBoundingBox(VSShaderLib* shader) {
 		getBoundingBox().draw(shader, cam_transformations);
+	}
+
+	void drawRearView(VSShaderLib* shader) {
+		MeshBuilder builder;
+
+		glStencilFunc(GL_NEVER, 1, 0x1);
+		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+
+		pushMatrix(MODEL);
+		translate(MODEL, 0.0f, 0.23f, 0.0f);
+		scale(MODEL, 1.0f, 0.8f, 1.0f);
+
+		builder.drawMesh(meshes[meshes.size() - 1], shader);
+
+		popMatrix(MODEL);
+	}
+
+	void drawScaledRearView(VSShaderLib* shader) {
+		MeshBuilder builder;
+
+		glStencilFunc(GL_EQUAL, 0, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		pushMatrix(MODEL);
+		scale(MODEL, 1.0f, 1.0f, 1.2f);
+
+		builder.drawMesh(meshes[meshes.size() - 1], shader);
+
+		popMatrix(MODEL);
 	}
 
 };
