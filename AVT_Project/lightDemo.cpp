@@ -93,7 +93,7 @@ textToRender* game_over;
 bool isGameOver;
 
 int current_camera = 0;
-Camera* cameras[4];
+Camera* cameras[5];
 
 VSShaderLib *shader = new VSShaderLib();
 VSShaderLib *shaderText = new VSShaderLib();
@@ -235,9 +235,9 @@ void setCameraTarget() {
 	}
 }
 
-void drawObjects() {
+void drawObjects(bool repeated) {
 	car.update(dt);
-	for (int i = 0; i < oranges.size(); i++) {
+	for (int i = 0; i < oranges.size() && !repeated; i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
 			car.setSpeed(0.0f);
@@ -258,27 +258,18 @@ void drawObjects() {
 	
 	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
-		if (car.checkCollision(cheerio->getBoundingBox())) {
+		if (car.checkCollision(cheerio->getBoundingBox()) && !repeated) {
 			car.setPoints(car.getPoints() - 20);
 			cheerio->collision_reaction(car_pos, 1.1f, -1.0f);
 		}
 		cheerio->update(dt);
 	}
 	
-	if (car.checkCollision(butter.getBoundingBox())) {
+	if (car.checkCollision(butter.getBoundingBox()) && !repeated) {
 		car.setPoints(car.getPoints() - 20);
 		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
 	butter.update(dt);
-	
-	glDisable(GL_CULL_FACE);
-	if (current_camera == 3) {
-		car.drawCar(shader, cameras[3]);
-	}
-	else {
-		car.drawCar(shader, cameras[2]);
-	}
-	glEnable(GL_CULL_FACE);
 	
 	vec3 camera_pos = cameras[2]->getPosition();
 	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
@@ -297,7 +288,7 @@ void drawObjects() {
 	}
 
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
-	butter.drawButter(shader);
+	//butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
 	
 }
@@ -374,62 +365,45 @@ void renderScene(void) {
 	glUniform1i(pause_on_Id, keys['s']);
 
 	int objId = 0;
+	pushMatrix(VIEW);
+	glDisable(GL_CULL_FACE);
+	if (current_camera == 3) {
+		car.drawRearView(shader, cameras[3], 3, TextureArray, false, cameras[4]);
+	}
+	else {
+		car.drawRearView(shader, cameras[2], 3, TextureArray, false, cameras[4]);
+	}
+	glEnable(GL_CULL_FACE);
 
-	glStencilMask(0x00);
-	drawObjects();
-	
-	glClear(GL_STENCIL_BUFFER_BIT);
 
-	/*glStencilMask(0xFF);
-	glStencilFunc(GL_NEVER, 1, 0x1);
-	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-	butter.drawButter(shader);
 
-	glStencilFunc(GL_EQUAL, 1, 0x1);
+	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	pushMatrix(MODEL);
-	scale(MODEL, 1.0f, 1.0f, 1.0f);
-	drawObjects();
-	popMatrix(MODEL);*/
+	drawObjects(false);
 
 	setLights();
 
-	//World axis
-	for (int i = 0; i < 3; ++i) {
-
-		// send the material
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		pushMatrix(MODEL);
-		translate(MODEL, myMeshes[objId].position.x, myMeshes[objId].position.y, myMeshes[objId].position.z);
-		rotate(MODEL, myMeshes[objId].rotAngle, myMeshes[objId].rotation.x, myMeshes[objId].rotation.y, myMeshes[objId].rotation.z);
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-
-		if (!shader->isProgramValid()) {
-			printf("Program Not Valid!\n");
-			exit(1);
-		}
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
+	glStencilFunc(GL_EQUAL, 1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glDisable(GL_CULL_FACE);
+	popMatrix(VIEW);
+	pushMatrix(VIEW);
+	pushMatrix(PROJECTION);
+	cameras[4]->setViewPort(WinX, WinY);
+	if (current_camera == 3) {
+		car.drawRearView(shader, cameras[3], 3, TextureArray, true, cameras[4]);
 	}
+	else {
+		car.drawRearView(shader, cameras[2], 3, TextureArray, true, cameras[4]);
+	}
+	glEnable(GL_CULL_FACE);
+
+	drawObjects(true);
+	setLights();
+	popMatrix(VIEW);
+	popMatrix(PROJECTION);
+	glStencilFunc(GL_ALWAYS, 1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
@@ -859,7 +833,9 @@ int main(int argc, char** argv) {
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
 	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
 	PerspectiveCamera camera4({ -0.2f, 0.0f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
-	camera4.setSphericCoords(vec3(-0.4f, 0.4f, 0.01f));
+	PerspectiveCamera camera5({ 2.0f, 0.6f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
+	camera4.setSphericCoords(vec3(-0.4f, 0.5f, 0.001f));
+	camera5.setSphericCoords(vec3(2.0f, 0.6f, 0.001f));
 
 	currentPosition = vec3(-4, 1, 1);
 
@@ -867,6 +843,7 @@ int main(int argc, char** argv) {
 	cameras[1] = &camera2;
 	cameras[2] = &camera3;
 	cameras[3] = &camera4;
+	cameras[4] = &camera5;
 
 	//  GLUT initialization
 	glutInit(&argc, argv);

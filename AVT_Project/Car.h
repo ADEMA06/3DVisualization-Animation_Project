@@ -224,7 +224,7 @@ public:
 		multMatrix(body_transformations, get(MODEL));
 	}
 
-	void setCarLightsAndCamera(Camera* camera, VSShaderLib *shader) {
+	void setCarLightsAndCamera(Camera* camera, VSShaderLib *shader, bool repeated, Camera* rearview) {
 		float res[4];
 		float res1[4];
 
@@ -241,13 +241,14 @@ public:
 		//Up vector for lookat matrix calculation
 		vec3 up(0, 1, 0);
 		camera->setTransformations(cam_transformations);
-		if (current_camera == 2) {
+		if ((current_camera == 2 || current_camera == 3) && !repeated) {
 			camera->lookAtPoint({ getPosition().x, getPosition().y+0.3f, getPosition().z }, up);
 		}
-		else if (current_camera == 3) {
-			camera->lookAtPoint({ getPosition().x+0.2f, getPosition().y+0.3f, getPosition().z }, up);
+		if (repeated) {
+		    rearview->setTransformations(cam_transformations);
+			rearview->lookAtPoint({ getPosition().x, getPosition().y , getPosition().z }, up);
 		}
-
+	
 		//Obtain spotlight positions and directions in eye coordinates--------------------------------------
 		multMatrixPoint(cam_transformations, lights_dir1, res);
 		multMatrixPoint(VIEW, res, res1);
@@ -283,6 +284,7 @@ public:
 	void carRecursiveDraw(const aiScene* scene, aiNode* nd, VSShaderLib* shader, int offset, GLuint *textures) {
 		MeshBuilder builder;
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+
 		for (unsigned int n = 0; n < meshes.size(); ++n) {
 			int diffMapCount = 0;
 			glUniform1ui(diffMapCount_loc, 0);
@@ -302,8 +304,9 @@ public:
 					}
 				}
 			}
-			if(n != meshes.size() - 1)
-			builder.drawMesh(meshes[n], shader);
+			if (n != meshes.size() - 1) {
+				builder.drawMesh(meshes[n], shader);
+			}
 		}
 
 	}
@@ -312,11 +315,33 @@ public:
 		return cam_transformations;
 	}
 
-	void drawCar(VSShaderLib *shader, Camera* camera) {
+	void drawRearView(VSShaderLib* shader, Camera* camera, int offset, GLuint* textures, bool repeated, Camera* rearview) {
 		MeshBuilder builder;
 		//Preset Light and Camera information (view and prespective matrices)
-		setCarLightsAndCamera(camera, shader);
+		setCarLightsAndCamera(camera, shader, repeated, rearview);
+		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+
+		if (!repeated) {
+			glStencilFunc(GL_NEVER, 1, 0x1);
+			glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+			meshes[meshes.size() - 1].mat.diffuse[3] = 1.0f;
+			pushMatrix(MODEL);
+			meshes[meshes.size() - 1].mat.diffuse[3] = 1.0f;
+			translate(MODEL, 0.0f, 0.23f, 0.0f);
+			scale(MODEL, 1.0f, 0.8f, 1.0f);
+			builder.drawMesh(meshes[meshes.size() - 1], shader);
+			popMatrix(MODEL);
+			glStencilFunc(GL_EQUAL, 0, 0x1);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			pushMatrix(MODEL);
+			meshes[meshes.size() - 1].mat.diffuse[3] = 1.0f;
+			scale(MODEL, 1.0f, 1.0f, 1.2f);
+			builder.drawMesh(meshes[meshes.size() - 1], shader);
+			popMatrix(MODEL);
+		}
+		glDisable(GL_CULL_FACE);
 		carRecursiveDraw(carScene, carScene->mRootNode, shader, offset, textures);
+		glEnable(GL_CULL_FACE);
 		popMatrix(MODEL);
 		updateBoundingBox(body_transformations);
 	}
