@@ -164,9 +164,9 @@ typedef struct {
 	float	life;		// vida
 	float	fade;		// fade
 	float	r, g, b;    // color
-	GLfloat x, y, z;    // posi‹o
+	GLfloat x, y, z;    // posi��o
 	GLfloat vx, vy, vz; // velocidade 
-	GLfloat ax, ay, az; // acelera‹o
+	GLfloat ax, ay, az; // acelera��o
 } Particle;
 //-------------------------------------------
 
