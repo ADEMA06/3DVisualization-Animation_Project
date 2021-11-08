@@ -36,6 +36,9 @@
     <ClCompile Include="AssimpMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Car.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h">
@@ -125,6 +128,9 @@
     <ClInclude Include="AssimpMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="flare.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\pointlight.frag">
@@ -138,6 +144,12 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="shaders\text.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="flare.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="flare.frag">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

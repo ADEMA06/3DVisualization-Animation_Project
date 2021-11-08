@@ -82,6 +82,8 @@ public:
     bool checkCollision(AABB otherBoundingBox) {
         return this->bounding_box.checkCollision(otherBoundingBox);
     }
+
+
 };
 
 #endif

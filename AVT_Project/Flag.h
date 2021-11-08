@@ -22,8 +22,6 @@ public:
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-		printf("%f %f\n", direction.x, direction.z);
-
 		float height = 8.0f;
 		MyMesh* amesh = new MyMesh(createCylinder(height, 0.1f, 10));
 		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { abs(direction.x) == 1.0f ? getPosition().x : getPosition().x + width / 2, getPosition().y, abs(direction.z) == 1.0f ? getPosition().z : getPosition().z + width / 2 });
@@ -31,6 +29,24 @@ public:
 		amesh = new MyMesh(createCylinder(height, 0.1f, 10));
 		amesh = builder.setMesh(amesh, amb, red, red, emissive, 100.0f, 0.0f, { abs(direction.x) == 1.0f ? getPosition().x : getPosition().x - width / 2, getPosition().y, abs(direction.z) == 1.0f ? getPosition().z : getPosition().z - width / 2 });
 		poles.push_back(amesh);
+	}
+
+	vec3 getDirection() {
+		return this->direction;
+	}
+
+	bool betweenPoles(vec3 car_pos) {
+		if (direction.x == 1) {
+			if (car_pos.x >= poles[0]->position.x - 0.3f && car_pos.x <= poles[0]->position.x + 0.3f && car_pos.z < poles[0]->position.z && car_pos.z > poles[1]->position.z) {
+				return true;
+			}
+		}
+		else {
+			if (car_pos.z >= poles[0]->position.z - 0.3f && car_pos.z <= poles[0]->position.z + 0.3f && car_pos.x < poles[0]->position.x && car_pos.x > poles[1]->position.x) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 

@@ -114,6 +114,10 @@ public:
 		flag->createFlag();
 	}
 
+	bool carPassesFlag(vec3 car_pos) {
+		return flag->betweenPoles(car_pos);
+	}
+
 
 	void draw(VSShaderLib *shader, vec3 camera_position, vec3 camera_direction, bool culling) {
 		MeshBuilder builder;

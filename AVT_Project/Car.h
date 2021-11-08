@@ -187,9 +187,6 @@ public:
 		setBoundingBox(min_aabb, max_aabb);
 		meshes = createMeshFromAssimp(carScene, textures, offset);
 
-		for (int i = 0; i < meshes.size(); i++) {
-			meshes[i].mat.texCount = 4;
-		}
 
 		float max_x = max_aabb.x*0.4f;
 		float max_z = max_aabb.z*0.4f;

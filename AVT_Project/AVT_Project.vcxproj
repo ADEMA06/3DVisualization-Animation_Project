@@ -164,6 +164,7 @@
     <ClCompile Include="AVTmathLib.cpp" />
     <ClCompile Include="basic_geometry.cpp" />
     <ClCompile Include="lightDemo.cpp" />
+    <ClCompile Include="Car.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
     <ClCompile Include="vsShaderLib.cpp" />
   </ItemGroup>
@@ -177,6 +178,7 @@
     <ClInclude Include="Car.h" />
     <ClInclude Include="Cheerio.h" />
     <ClInclude Include="Flag.h" />
+    <ClInclude Include="flare.h" />
     <ClInclude Include="ft2build.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="HUD.h" />
@@ -200,6 +202,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies.exe" />
+    <None Include="flare.frag" />
+    <None Include="flare.vert" />
     <None Include="shaders\pointlight.frag" />
     <None Include="shaders\pointlight.vert" />
     <None Include="shaders\text.frag" />

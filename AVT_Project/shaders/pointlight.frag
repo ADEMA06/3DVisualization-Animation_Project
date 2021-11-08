@@ -5,6 +5,7 @@ uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
+uniform sampler2D texmap8;
 
 uniform int pause_on;
 
@@ -131,7 +132,7 @@ void main() {
 		
 	}
 	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
-	float f = exp(-0.1*dist);
+	float f = exp(-0.03*dist);
 
 	if(mat.texCount == 0){
 		colorOut = (diffuse + spec) + mat.ambient;	
@@ -141,7 +142,7 @@ void main() {
 		colorOut = (diffuse + spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 2){
-		texel = texture(texmap2, DataIn.tex_coord);
+		texel = texture(texmap1, DataIn.tex_coord);
 		colorOut = (diffuse + spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 3){
@@ -157,13 +158,18 @@ void main() {
 	if(diffMapCount != 0 && diffMapCount == 1)
 		colorOut = (diffuse + spec) * texture(texUnitDiff, DataIn.tex_coord);
 
-	
-
 	vec3 colorRGB = vec3(colorOut);
-	vec3 fogColor = vec3(0.75, 0.75, 0.75);
+	//vec3 fogColor = vec3(1.0, 0.65, 0.0);
 	//vec3 finalColor = mix(fogColor, colorRGB, f);
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 	//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
 
 	if(pause_on == 1) colorOut = vec4(vec3(colorOut)/3, colorOut.a);
+
+	if(mat.texCount == 8) {
+		texel = texture(texmap8, DataIn.tex_coord);  //texel from element flare texture
+		if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		else
+			colorOut = mat.diffuse * texel;
+	}
 }
