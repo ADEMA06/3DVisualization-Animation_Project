@@ -155,7 +155,7 @@ void main() {
 	}
 
 	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
-	float f = exp(-0.1*dist);
+	float f = exp(-0.02*dist);
 
 
 	if(mat.texCount == 0){
@@ -166,7 +166,7 @@ void main() {
 		colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 2){
-		texel = texture(texmap2, DataIn.tex_coord);
+		texel = texture(texmap1, DataIn.tex_coord);
 		colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 3){
@@ -179,7 +179,7 @@ void main() {
 		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
 	}
 
-else if(mat.texCount == 4){
+	else if(mat.texCount == 4){
 		texel = texture(texmap3, DataIn.tex_coord);
 		if((texel.a <= 0.05)  || (mat.diffuse.a == 0)) discard;
 		else
@@ -204,10 +204,10 @@ else if(mat.texCount == 4){
 	
 
 	vec3 colorRGB = vec3(colorOut);
-	vec3 fogColor = vec3(0.75, 0.75, 0.75);
-	//vec3 finalColor = mix(fogColor, colorRGB, f);
+	vec3 fogColor = vec3(1.0f, 0.55f, 0.0f);
+	vec3 finalColor = mix(fogColor, colorRGB, f);
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
-	//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
+	colorOut = vec4(vec3(finalColor), mat.diffuse.a);
 
 	if(pause_on == 1) colorOut = vec4(vec3(colorOut)/3, colorOut.a);
 }
