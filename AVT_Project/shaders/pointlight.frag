@@ -179,11 +179,13 @@ void main() {
 		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
 	}
 
-	else if(mat.texCount == 4){
-		texel = texture(texmap0, DataIn.tex_coord);
-		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
+else if(mat.texCount == 4){
+		texel = texture(texmap3, DataIn.tex_coord);
+		if((texel.a <= 0.05)  || (mat.diffuse.a == 0)) discard;
+		else
+			colorOut = mat.diffuse * texel;
 	}
-
+  
 	else if(mat.texCount == 9 && texMode == 1){
 		texel = texture(texmap9, DataIn.tex_coord);
 		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
@@ -203,7 +205,7 @@ void main() {
 
 	vec3 colorRGB = vec3(colorOut);
 	vec3 fogColor = vec3(0.75, 0.75, 0.75);
-	vec3 finalColor = mix(fogColor, colorRGB, f);
+	//vec3 finalColor = mix(fogColor, colorRGB, f);
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 	//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
 

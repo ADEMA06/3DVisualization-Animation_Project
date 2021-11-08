@@ -11,7 +11,6 @@ class Camera {
 	bool fixed;
 	float far_plane;
 	float near_plane;
-	vec3 spheric_coords;
 	
 	
 protected:

@@ -94,7 +94,7 @@ textToRender* game_over;
 bool isGameOver;
 
 int current_camera = 0;
-Camera* cameras[4];
+Camera* cameras[5];
 
 VSShaderLib *shader = new VSShaderLib();
 VSShaderLib *shaderText = new VSShaderLib();
@@ -164,9 +164,9 @@ typedef struct {
 	float	life;		// vida
 	float	fade;		// fade
 	float	r, g, b;    // color
-	GLfloat x, y, z;    // posição
+	GLfloat x, y, z;    // posi¬ç‚Äπo
 	GLfloat vx, vy, vz; // velocidade 
-	GLfloat ax, ay, az; // aceleração
+	GLfloat ax, ay, az; // acelera¬ç‚Äπo
 } Particle;
 //-------------------------------------------
 
@@ -248,9 +248,9 @@ void setCameraTarget() {
 	}
 }
 
-void drawObjects() {
+void drawObjects(bool repeated) {
 	car.update(dt);
-	for (int i = 0; i < oranges.size(); i++) {
+	for (int i = 0; i < oranges.size() && !repeated; i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
 			car.setSpeed(0.0f);
@@ -272,27 +272,18 @@ void drawObjects() {
 	
 	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
-		if (car.checkCollision(cheerio->getBoundingBox())) {
+		if (car.checkCollision(cheerio->getBoundingBox()) && !repeated) {
 			car.setPoints(car.getPoints() - 20);
 			cheerio->collision_reaction(car_pos, 1.1f, -1.0f);
 		}
 		cheerio->update(dt);
 	}
 	
-	if (car.checkCollision(butter.getBoundingBox())) {
+	if (car.checkCollision(butter.getBoundingBox()) && !repeated) {
 		car.setPoints(car.getPoints() - 20);
 		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
 	butter.update(dt);
-	
-	glDisable(GL_CULL_FACE);
-	if (current_camera == 3) {
-		car.drawCar(shader, cameras[3], 3, TextureArray);
-	}
-	else {
-		car.drawCar(shader, cameras[2], 3, TextureArray);
-	}
-	glEnable(GL_CULL_FACE);
 	
 	vec3 camera_pos = cameras[2]->getPosition();
 	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
@@ -384,8 +375,6 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
@@ -403,54 +392,41 @@ void renderScene(void) {
 
 	int objId = 0;
 	
-	//glStencilMask(0);
-	drawObjects();
-	
-	/*glStencilFunc(GL_EQUAL, 1, 1);
+	pushMatrix(VIEW);
+	glDisable(GL_CULL_FACE);
+	if (current_camera == 3) {
+		car.drawCar(shader, cameras[3], 3, TextureArray, false, cameras[4]);
+	}
+	else {
+		car.drawCar(shader, cameras[2], 3, TextureArray, false, NULL);
+	}
+	glEnable(GL_CULL_FACE);
+
+
+
+	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	pushMatrix(MODEL);
-	scale(MODEL, -1.0f, 1.0f, 1.0f);
-	drawObjects();
-	popMatrix(MODEL);*/
+	drawObjects(false);
 
 	setLights();
 
-	//World axis
-	for (int i = 0; i < 3; ++i) {
-
-		// send the material
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		pushMatrix(MODEL);
-		translate(MODEL, myMeshes[objId].position.x, myMeshes[objId].position.y, myMeshes[objId].position.z);
-		rotate(MODEL, myMeshes[objId].rotAngle, myMeshes[objId].rotation.x, myMeshes[objId].rotation.y, myMeshes[objId].rotation.z);
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-
-		if (!shader->isProgramValid()) {
-			printf("Program Not Valid!\n");
-			exit(1);
-		}
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
+	glStencilFunc(GL_EQUAL, 1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glDisable(GL_CULL_FACE);
+	popMatrix(VIEW);
+	pushMatrix(VIEW);
+	pushMatrix(PROJECTION);
+	cameras[4]->setViewPort(WinX, WinY);
+	if (current_camera == 3) {
+		car.drawCar(shader, cameras[3], 3, TextureArray, true, cameras[4]);
+		drawObjects(true);
+		setLights();
 	}
+	glEnable(GL_CULL_FACE);
+	popMatrix(VIEW);
+	popMatrix(PROJECTION);
+	glStencilFunc(GL_ALWAYS, 1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
@@ -501,6 +477,8 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'o': keys['o'] = true; break;
 	case 'a': keys['a'] = true; break;
 	case 'p': keys['p'] = true; break;
+
+	case 'e': table.Erupt(); break;
 	
 		//Reset game
 	case 'r': if (isGameOver) resetGame(); break;
@@ -724,6 +702,8 @@ void init()
 	Texture2D_Loader(TextureArray, "orange.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.tga", 9);
+	Texture2D_Loader(TextureArray, "particle.tga", 3);
+
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -768,8 +748,8 @@ void init()
 	candles.push_back(candle5);
 	candles.push_back(candle6);
 
-	car.createCar(TextureArray, 3);
-	table.createTable(TextureArray, 4);
+	car.createCar(TextureArray, 4);
+	table.createTable(TextureArray, 5);
 	butter.createButter();
 
 	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);
@@ -870,7 +850,9 @@ int main(int argc, char** argv) {
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
 	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
 	PerspectiveCamera camera4({ -0.2f, 0.0f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
-	camera4.setSphericCoords(vec3(-0.4f, 0.4f, 0.01f));
+	PerspectiveCamera camera5({ 2.0f, 0.6f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
+	camera4.setSphericCoords(vec3(-0.4f, 0.5f, 0.001f));
+	camera5.setSphericCoords(vec3(2.0f, 0.6f, 0.001f));
 
 	currentPosition = vec3(-4, 1, 1);
 
@@ -878,6 +860,7 @@ int main(int argc, char** argv) {
 	cameras[1] = &camera2;
 	cameras[2] = &camera3;
 	cameras[3] = &camera4;
+	cameras[4] = &camera5;
 
 	//  GLUT initialization
 	glutInit(&argc, argv);
