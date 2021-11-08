@@ -188,7 +188,7 @@ public:
 		meshes = createMeshFromAssimp(carScene, textures, offset);
 
 		for (int i = 0; i < meshes.size(); i++) {
-			meshes[i].mat.texCount = 4;
+			meshes[i].mat.texCount = 1;
 		}
 
 		float max_x = max_aabb.x*0.4f;
@@ -355,6 +355,7 @@ public:
 
 		pushMatrix(MODEL);
 		translate(MODEL, 0.0f, 0.23f, 0.0f);
+		rotate(MODEL, 180.0f, 0.0f, 1.0f, 0.0f);
 		scale(MODEL, 1.0f, 0.8f, 1.0f);
 
 		builder.drawMesh(meshes[meshes.size() - 1], shader);

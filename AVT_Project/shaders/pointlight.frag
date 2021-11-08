@@ -150,8 +150,10 @@ void main() {
 		colorOut = (diffuse + spec) *  texel1 * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 4){
-		texel = texture(texmap0, DataIn.tex_coord);
-		colorOut = (diffuse + spec) * texel + mat.ambient;
+		texel = texture(texmap3, DataIn.tex_coord);
+		if((texel.a <= 0.05)  || (mat.diffuse.a == 0)) discard;
+		else
+			colorOut = mat.diffuse * texel;
 	}
 
 	if(diffMapCount != 0 && diffMapCount == 1)

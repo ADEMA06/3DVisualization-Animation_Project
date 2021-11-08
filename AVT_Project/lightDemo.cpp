@@ -299,7 +299,7 @@ void drawObjects(bool repeated) {
 	}
 
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
-	//butter.drawButter(shader);
+	butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
 	
 }
@@ -366,13 +366,10 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
-	glUniform1i(tex_loc3, 3);
 
 	glUniform1i(pause_on_Id, keys['s']);
 
@@ -462,6 +459,8 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'o': keys['o'] = true; break;
 	case 'a': keys['a'] = true; break;
 	case 'p': keys['p'] = true; break;
+
+	case 'e': table.Erupt(); break;
 	
 		//Reset game
 	case 'r': if (isGameOver) resetGame(); break;
@@ -683,6 +682,7 @@ void init()
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "orange.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
+	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -742,8 +742,8 @@ void init()
 	candles.push_back(candle5);
 	candles.push_back(candle6);
 
-	car.createCar(TextureArray, 3);
-	table.createTable(TextureArray, 4);
+	car.createCar(TextureArray, 4);
+	table.createTable(TextureArray, 5);
 	butter.createButter();
 
 	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);
