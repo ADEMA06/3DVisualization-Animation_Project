@@ -121,7 +121,7 @@ public:
 				printf("Couldn't open file: %s\n", filepath.c_str());
 		}
 		pyramidScene = Import3DFromFile(filepath, pyramidScene, &vec3(), &vec3());
-		pyramid = createMeshFromAssimp(pyramidScene, textures, offset);
+		pyramid = createMeshFromAssimp(pyramidScene, textures, offset+2);
 	}
 
 	void tableRecursiveDraw(aiNode* nd, VSShaderLib* shader, GLuint* textures, int offset, std::vector<struct MyMesh> meshes) {
