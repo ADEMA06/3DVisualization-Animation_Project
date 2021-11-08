@@ -46,7 +46,7 @@
 #include "Light.h"
 #include "Candle.h"
 #include "HUD.h"
-
+#include "BillBoardObject.h"
 using namespace std;
 
 #define CAPTION "AVT Per Fragment Phong Lightning Demo"
@@ -75,6 +75,7 @@ vec3 butter_pos(5.0f, 0.0f, 0.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
+BillBoardObject bb(vec3(40.0, 0.0, -30.0), 9);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
@@ -123,8 +124,9 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc9;
 GLuint TextureArray[10];
+GLint texMode_uniformId;
 
 
 // Camera Position
@@ -266,6 +268,7 @@ void drawObjects() {
 			}
 		}
 	}
+
 	
 	vec3 car_pos = car.getPosition();
 	for (auto const& cheerio : road.getVisible()) {
@@ -308,8 +311,14 @@ void drawObjects() {
 	}
 
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
+	if(current_camera == 2) {
+		bb.drawBillBoard(cameras[current_camera]->getPosition(), shader);
+	}
+	
+
 	butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
+
 	
 }
 
@@ -378,25 +387,31 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+	glActiveTexture(GL_TEXTURE9);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[9]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
+	glUniform1i(tex_loc9, 9);
 
 	glUniform1i(pause_on_Id, keys['s']);
 
 	int objId = 0;
 	
-	glStencilMask(0);
+	//glStencilMask(0);
 	drawObjects();
 	
-	glStencilFunc(GL_EQUAL, 1, 1);
+	/*glStencilFunc(GL_EQUAL, 1, 1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	pushMatrix(MODEL);
 	scale(MODEL, -1.0f, 1.0f, 1.0f);
 	drawObjects();
-	popMatrix(MODEL);
-
+	popMatrix(MODEL);*/
 
 	setLights();
 
@@ -608,7 +623,7 @@ GLuint setupShaders() {
 	glBindAttribLocation(shader->getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader->getProgramIndex());
-
+	texMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "texMode");
 	pvm_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_normal");
@@ -618,6 +633,7 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader->getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader->getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader->getProgramIndex(), "texmap3");
+	tex_loc9 = glGetUniformLocation(shader->getProgramIndex(), "texmap9");
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader->getAllInfoLogs().c_str());
 
 	shaderText->init();
@@ -707,6 +723,7 @@ void init()
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "orange.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
+	Texture2D_Loader(TextureArray, "tree.tga", 9);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -725,21 +742,6 @@ void init()
 	road.doLeftCurve();
 	road.doRoad(5);
 	road.doRightCurve();
-	/*road.doNorthRoad(25);
-	road.doEastCurve();
-	road.doEastRoad(20);
-	road.doSouthCurve();
-	road.doSouthRoad(50);
-	road.doWestSouthCurve();
-	road.doWestRoad(50);
-	road.doNorthWestCurve();
-	road.doNorthRoad(60);
-	road.doEastCurve();
-	road.doEastRoad(60);
-	road.doSouthCurve();
-	road.doSouthRoad(70);
-	road.doWestSouthCurve();
-	road.doWestRoad(70);*/
 	road.doFinishLine();
 
 	int n_cherrios = rand() % 5;
@@ -787,6 +789,8 @@ void init()
 	oranges.push_back(orange3);
 	oranges.push_back(orange4);
 	oranges.push_back(orange5);
+
+	bb.createBillBoard();
 
 	MyMesh amesh;
 	float height = 10.0f;
