@@ -42,7 +42,7 @@ public:
 
 		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
 		float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
-		
+
 		float shininess = 100.0f;
 		quad = createQuad(6, 6);
 		memcpy(quad.mat.specular, tree_spec, 4 * sizeof(float));
