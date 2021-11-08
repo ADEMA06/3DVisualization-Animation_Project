@@ -18,8 +18,11 @@ class Table : public StaticObject {
 	struct MyMesh base;
 	std::vector<struct MyMesh> legs;
 	std::vector<struct MyMesh> meshes;
+	std::vector<struct MyMesh> pyramid;
 	const aiScene* tableScene = NULL;
+	const aiScene* pyramidScene = NULL;
 	struct MyMesh particle;
+	int scenery = 0;
 
 	//Dimensions
 	float width;
@@ -53,11 +56,15 @@ public:
 		this->legHeight = legHeight;
 	}
 
+	void chengeScenery() {
+		scenery += 1;
+	}
+
 	void createTable(GLuint* textures, int offset) {
 		MeshBuilder builder;
 
-		float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-		float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+		float amb[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+		float diff[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 		float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float shininess = 500.0f;
@@ -96,10 +103,28 @@ public:
 		}
 		tableScene = Import3DFromFile(filepath, tableScene, &vec3(), &vec3());
 		meshes = createMeshFromAssimp(tableScene, textures, offset);
+		strcpy(model_dir, "pyramid");
+		while (true) {
 
+			std::ostringstream oss;
+			oss << model_dir << "/" << model_dir << ".obj";;
+			filepath = oss.str();   //path of OBJ file in the VS project
+
+			strcat(model_dir, "/");
+			//check if file exists
+			std::ifstream fin(filepath.c_str());
+			if (!fin.fail()) {
+				fin.close();
+				break;
+			}
+			else
+				printf("Couldn't open file: %s\n", filepath.c_str());
+		}
+		pyramidScene = Import3DFromFile(filepath, pyramidScene, &vec3(), &vec3());
+		pyramid = createMeshFromAssimp(pyramidScene, textures, offset);
 	}
 
-	void tableRecursiveDraw(aiNode* nd, VSShaderLib* shader, GLuint* textures, int offset) {
+	void tableRecursiveDraw(aiNode* nd, VSShaderLib* shader, GLuint* textures, int offset, std::vector<struct MyMesh> meshes) {
 		MeshBuilder builder;
 		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
 		for (int n = 0; n < meshes.size(); ++n) {
@@ -136,8 +161,14 @@ public:
 
 		pushMatrix(MODEL);
 		translate(MODEL, width / 3, 0.0f, width / 3);
-		scale(MODEL, 10.0f, 10.0f, 10.0f);
-		tableRecursiveDraw(tableScene->mRootNode, shader, textures, offset);
+		if (scenery == 0) {
+			scale(MODEL, 10.0f, 10.0f, 10.0f);
+			tableRecursiveDraw(tableScene->mRootNode, shader, textures, offset, meshes);
+		}
+		else {
+			scale(MODEL, 0.7f, 0.7f, 0.7f);
+			tableRecursiveDraw(tableScene->mRootNode, shader, textures, offset, pyramid);
+		}
 		popMatrix(MODEL);
 
 
@@ -214,8 +245,10 @@ public:
 	}
 
 	void Erupt() {
-		iniParticles();
-		volcanoErupting = true;
+		if (scenery == 0) {
+			iniParticles();
+			volcanoErupting = true;
+		}
 	}
 
 	void iniParticles(void)

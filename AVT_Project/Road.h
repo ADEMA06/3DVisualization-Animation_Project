@@ -108,6 +108,10 @@ public:
 		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? 2.5 * direction.x : 2.5 * initial_x, 0, abs(direction.z) == 1.0f ? 2.5 * direction.z : 2.5 * initial_z) + direction;
 	}
 
+	bool carPassedFlag(vec3 car_pos) {
+		return flag->betweenPoles(car_pos);
+	}
+
 
 	void doFinishLine() {
 		flag = new Flag(last_pos, width, direction);

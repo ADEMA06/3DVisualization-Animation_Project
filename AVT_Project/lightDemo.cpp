@@ -278,6 +278,12 @@ void drawObjects(bool repeated) {
 		}
 		cheerio->update(dt);
 	}
+
+	if (road.carPassedFlag(car_pos)) {
+		Texture2D_Loader(TextureArray, "sand.jpg", 0);
+		table.chengeScenery();
+		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+	}
 	
 	if (car.checkCollision(butter.getBoundingBox()) && !repeated) {
 		car.setPoints(car.getPoints() - 20);
@@ -698,8 +704,8 @@ void init()
 	//Texture Object definition
 
 	glGenTextures(10, TextureArray);
-	Texture2D_Loader(TextureArray, "stone.tga", 0);
-	Texture2D_Loader(TextureArray, "orange.jpg", 1);
+	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
+	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.tga", 9);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
@@ -802,7 +808,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.66f, 0.66f, 0.66f, 1.0f);
+	glClearColor(0.55f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //may need to remove this
 	glEnable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
