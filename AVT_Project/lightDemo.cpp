@@ -47,6 +47,8 @@
 #include "Candle.h"
 #include "HUD.h"
 #include "BillBoardObject.h"
+#include "flare.h"
+
 using namespace std;
 
 #define CAPTION "AVT Per Fragment Phong Lightning Demo"
@@ -104,6 +106,9 @@ const string font_name = "fonts/arial.ttf";
 
 HUD hud;
 
+FLARE_DEF AVTflare;
+float lightScreenPos[3];  //Position of the light in Window Coordinates
+
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
 
@@ -125,7 +130,7 @@ GLint lPos_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc9;
-GLuint TextureArray[10];
+GLuint TextureArray[11];
 GLint texMode_uniformId;
 
 
@@ -248,6 +253,129 @@ void setCameraTarget() {
 	}
 }
 
+
+//--------------------------------------------------------------------------------------------------------//
+//                                           FLARE                                                        //
+//--------------------------------------------------------------------------------------------------------//
+void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib* shader) {
+	int     dx, dy;          // Screen coordinates of "destination"
+	int     px, py;          // Screen coordinates of flare element
+	int		cx, cy;
+	float    maxflaredist, flaredist, flaremaxsize, flarescale, scaleDistance;
+	int     width, height, alpha;    // Piece parameters;
+	int     i;
+	float	diffuse[4];
+
+	GLint loc;
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int screenMaxCoordX = m_viewport[0] + m_viewport[2] - 1;
+	int screenMaxCoordY = m_viewport[1] + m_viewport[3] - 1;
+
+	//viewport center
+	cx = m_viewport[0] + (int)(0.5f * (float)m_viewport[2]) - 1;
+	cy = m_viewport[1] + (int)(0.5f * (float)m_viewport[3]) - 1;
+
+	// Compute how far off-center the flare source is.
+	maxflaredist = sqrt(cx * cx + cy * cy);
+	flaredist = sqrt((lx - cx) * (lx - cx) + (ly - cy) * (ly - cy));
+	scaleDistance = (maxflaredist - flaredist) / maxflaredist;
+	flaremaxsize = (int)(m_viewport[2] * flare->fMaxSize);
+	flarescale = (int)(m_viewport[2] * flare->fScale);
+
+	// Destination is opposite side of centre from source
+	dx = clampi(cx + (cx - lx), m_viewport[0], screenMaxCoordX);
+	dy = clampi(cy + (cy - ly), m_viewport[1], screenMaxCoordY);
+
+	// Render each element. To be used Texture Unit 0
+
+	glUniform1i(tex_loc3, 3);  //use TU 0
+
+	for (i = 0; i < flare->nPieces; ++i)
+	{
+		// Position is interpolated along line between start and destination.
+		px = (int)((1.0f - flare->element[i].fDistance) * lx + flare->element[i].fDistance * dx);
+		py = (int)((1.0f - flare->element[i].fDistance) * ly + flare->element[i].fDistance * dy);
+		px = clampi(px, m_viewport[0], screenMaxCoordX);
+		py = clampi(py, m_viewport[1], screenMaxCoordY);
+
+		// Piece size are 0 to 1; flare size is proportion of screen width; scale by flaredist/maxflaredist.
+		width = (int)(scaleDistance * flarescale * flare->element[i].fSize);
+
+		// Width gets clamped, to allows the off-axis flaresto keep a good size without letting the elements get big when centered.
+		if (width > flaremaxsize)  width = flaremaxsize;
+
+		height = (int)((float)m_viewport[3] / (float)m_viewport[2] * (float)width);
+		memcpy(diffuse, flare->element[i].matDiffuse, 4 * sizeof(float));
+		diffuse[3] *= scaleDistance;   //scale the alpha channel
+
+		if (width > 1)
+		{
+			// send the material - diffuse color modulated with texture
+			loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
+			glUniform4fv(loc, 1, diffuse);
+			loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
+			glUniform1i(loc, 4);
+
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+			pushMatrix(MODEL);
+			translate(MODEL, (float)(px - width * 0.0f), (float)(py - height * 0.0f), 0.0f);
+			scale(MODEL, (float)width, (float)height, 1);
+			computeDerivedMatrix(PROJ_VIEW_MODEL);
+			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+			computeNormalMatrix3x3();
+			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+			glBindVertexArray(myMeshes[4].vao);
+			glDrawElements(myMeshes[4].type, myMeshes[4].numIndexes, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			popMatrix(MODEL);
+		}
+	}
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+}
+
+void drawFlare(VSShaderLib* shader) {
+	int flarePos[2];
+	int m_viewport[4];
+	float light_view_pos[4];
+
+	//Make light position the first candle
+	float light_position[4] = { candles.at(0).getPointLight().position.x, candles.at(0).getPointLight().position.y, candles.at(0).getPointLight().position.z, 1.0f };
+	multMatrixPoint(VIEW, light_position, light_view_pos);
+
+	glGetIntegerv(GL_VIEWPORT, m_viewport);
+
+	pushMatrix(MODEL);
+	loadIdentity(MODEL);
+	computeDerivedMatrix(PROJ_VIEW_MODEL);  //pvm to be applied to lightPost. pvm is used in project function
+
+	if (!project(light_view_pos, lightScreenPos, m_viewport))
+		printf("Error in getting projected light in screen\n");  //Calculate the window Coordinates of the light position: the projected position of light on viewport
+	flarePos[0] = clampi((int)lightScreenPos[0], m_viewport[0], m_viewport[0] + m_viewport[2] - 1);
+	flarePos[1] = clampi((int)lightScreenPos[1], m_viewport[1], m_viewport[1] + m_viewport[3] - 1);
+	popMatrix(MODEL);
+
+	//viewer looking down at  negative z direction
+	pushMatrix(PROJECTION);
+	loadIdentity(PROJECTION);
+	pushMatrix(VIEW);
+	loadIdentity(VIEW);
+	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+	render_flare(&AVTflare, flarePos[0], flarePos[1], m_viewport, shader);
+	popMatrix(PROJECTION);
+	popMatrix(VIEW);
+}
+
+//--------------------------------------------------------------------------------------------------------//
+
 void drawObjects(bool repeated) {
 	car.update(dt);
 	for (int i = 0; i < oranges.size() && !repeated; i++) {
@@ -279,7 +407,7 @@ void drawObjects(bool repeated) {
 		cheerio->update(dt);
 	}
 
-	if (road.carPassedFlag(car_pos)) {
+	if (road.carPassedFlag(car_pos) && table.getScenery() == 0) {
 		Texture2D_Loader(TextureArray, "sand.jpg", 0);
 		table.chengeScenery();
 		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
@@ -307,15 +435,17 @@ void drawObjects(bool repeated) {
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
 
+
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
 	if(current_camera == 2) {
 		bb.drawBillBoard(cameras[current_camera]->getPosition(), shader);
 	}
 	
-
+	if (table.getScenery() == 1) {
+		drawFlare(shader);
+	}
 	butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
-
 	
 }
 
@@ -438,7 +568,6 @@ void renderScene(void) {
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	hud.renderText(shaderText);
-
 
 	update();
 
@@ -703,7 +832,7 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(10, TextureArray);
+	glGenTextures(11, TextureArray);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
@@ -803,6 +932,10 @@ void init()
 
 	helpCube = createCube();
 	setMesh(helpCube, red, red, spec, emissive, shininess, texcount);
+
+	amesh = createQuad(1, 1);
+	myMeshes.push_back(amesh);
+	loadFlareFile(&AVTflare, "flare.txt");
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
