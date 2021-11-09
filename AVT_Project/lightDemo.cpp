@@ -290,7 +290,7 @@ void drawObjects(bool repeated) {
 		candles.at(i).drawCandle(shader);
 	}
 	
-	table.drawTable(shader, TextureArray, 4);
+	table.drawTable(shader, TextureArray, 5);
 	
 	for (int i = 0; i < oranges.size(); i++) {
 		oranges.at(i).updateSpeed(t);
@@ -382,16 +382,37 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[9]);
 
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[10]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc8, 8);
-	glUniform1i(tex_cube_loc, 9);
+
+	if (table.getScenery() == 0) {
+		glUniform1i(tex_cube_loc, 10);
+	}
+	else {
+		glUniform1i(tex_cube_loc, 9);
+	}
 
 	glUniform1i(pause_on_Id, keys['s']);
 
 
+
+	
+	
+	pushMatrix(VIEW);
+	glDisable(GL_CULL_FACE);
+	if (current_camera == 3) {
+		car.drawCar(shader, cameras[3], 4, TextureArray, false, cameras[4]);
+	}
+	else {
+		car.drawCar(shader, cameras[2], 4, TextureArray, false, NULL);
+	}
+	glEnable(GL_CULL_FACE);
 
 	int objId = 3;
 
@@ -414,6 +435,10 @@ void renderScene(void) {
 	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
 	glUniform1i(loc, myMeshes[objId].mat.texCount);
 
+	GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+	glUniform1i(diffMapCount_loc, 0);
+
+
 	// send matrices to OGL
 	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -427,16 +452,6 @@ void renderScene(void) {
 
 	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
 	glDepthMask(GL_TRUE);
-	
-	pushMatrix(VIEW);
-	glDisable(GL_CULL_FACE);
-	if (current_camera == 3) {
-		car.drawCar(shader, cameras[3], 3, TextureArray, false, cameras[4]);
-	}
-	else {
-		car.drawCar(shader, cameras[2], 3, TextureArray, false, NULL);
-	}
-	glEnable(GL_CULL_FACE);
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -452,7 +467,7 @@ void renderScene(void) {
 	pushMatrix(PROJECTION);
 	cameras[4]->setViewPort(WinX, WinY);
 	if (current_camera == 3) {
-		car.drawCar(shader, cameras[3], 3, TextureArray, true, cameras[4]);
+		car.drawCar(shader, cameras[3], 4, TextureArray, true, cameras[4]);
 		drawObjects(true);
 		setLights();
 	}
@@ -742,9 +757,14 @@ void init()
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 	//Sky Box Texture Object
-	const char* filenames[] = { "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png" };
+	const char* mountain_skybox[] = { "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png" };
 
-	TextureCubeMap_Loader(TextureArray, filenames, 9);
+	TextureCubeMap_Loader(TextureArray, mountain_skybox, 9);
+
+	const char* volcano_skybox[] = { "right_volc.jpg", "left_volc.jpg", "top_volc.jpg", "bottom_volc.jpg", "front_volc.jpg", "back_volc.jpg" };
+
+	TextureCubeMap_Loader(TextureArray, volcano_skybox, 10);
+
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };

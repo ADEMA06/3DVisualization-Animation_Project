@@ -57,7 +57,11 @@ public:
 	}
 
 	void chengeScenery() {
-		scenery += 1;
+		scenery = 1;
+	}
+
+	int getScenery() {
+		return scenery;
 	}
 
 	void createTable(GLuint* textures, int offset) {
