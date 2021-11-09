@@ -60,6 +60,10 @@ public:
 		scenery += 1;
 	}
 
+	int getScenery() {
+		return scenery;
+	}
+
 	void createTable(GLuint* textures, int offset) {
 		MeshBuilder builder;
 
