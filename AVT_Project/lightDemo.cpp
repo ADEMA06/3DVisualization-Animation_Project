@@ -130,7 +130,7 @@ GLint lPos_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc9;
-GLuint TextureArray[11];
+GLuint TextureArray[12];
 GLint texMode_uniformId;
 
 
@@ -153,6 +153,8 @@ float oldTime = 0.0f;
 float dt = 0.0f;
 
 bool leftKey = false;
+bool isPassingFlag = false;
+
 
 //----------------Lights---------------------
 Light directionalLight;
@@ -387,7 +389,25 @@ void drawFlare(VSShaderLib* shader) {
 
 //--------------------------------------------------------------------------------------------------------//
 
-void drawObjects(bool repeated) {
+
+//--------------------------------------------------------------------------------------------------------//
+//                                           MIRROR                                                       //
+//--------------------------------------------------------------------------------------------------------//
+void drawMirror(VSShaderLib *shader) {
+	MeshBuilder builder;
+	pushMatrix(MODEL);
+	rotate(MODEL, -90.0f, 0.0f, 1.0f, 0.0f);
+	translate(MODEL, 0.0f, 2.0f, 0.0f);
+	scale(MODEL, 10.0f, 4.0f, 10.0f);
+	builder.setShaders(shader, myMeshes[myMeshes.size() - 1]);
+	builder.drawMesh(myMeshes[myMeshes.size() - 1], shader);
+	popMatrix(MODEL);
+}
+
+
+//--------------------------------------------------------------------------------------------------------//
+
+void drawObjects(bool repeated, int scene_offset) {
 	car.update(dt);
 	for (int i = 0; i < oranges.size() && !repeated; i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
@@ -418,10 +438,15 @@ void drawObjects(bool repeated) {
 		cheerio->update(dt);
 	}
 
-	if (road.carPassedFlag(car_pos) && table.getScenery() == 0) {
-		Texture2D_Loader(TextureArray, "sand.jpg", 0);
-		table.chengeScenery();
+
+	if (road.carPassedFlag(car_pos) && !isPassingFlag) {
+		isPassingFlag = true;
+		table.changeScenery();
 		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+	}
+
+	if (!road.carPassedFlag(car_pos) && isPassingFlag) {
+		isPassingFlag = false;
 	}
 	
 	if (car.checkCollision(butter.getBoundingBox()) && !repeated) {
@@ -438,7 +463,7 @@ void drawObjects(bool repeated) {
 		candles.at(i).drawCandle(shader);
 	}
 	
-	table.drawTable(shader, TextureArray, 4);
+	table.drawTable(shader, TextureArray, 4, scene_offset);
 	
 	for (int i = 0; i < oranges.size(); i++) {
 		oranges.at(i).updateSpeed(t);
@@ -453,14 +478,13 @@ void drawObjects(bool repeated) {
 	}
 	
 	if (table.getScenery() == 1) {
-		drawFlare(shader);
+		//drawFlare(shader);
 	}
 	butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
-	
 }
 
-void setLights() {
+void setLights(float reflected) {
 	GLint loc;
 	float res[4];
 	float dirlight_direction[4] = { 0.0f, -1.0f, 0.0f, 0.0f };
@@ -474,7 +498,7 @@ void setLights() {
 	for (int i = 0; i < candles.size(); i++) {
 		float mult[4];
 		vec4 light_pos = candles.at(i).getPointLight().position;
-		float values[4] = { light_pos.x, light_pos.y, light_pos.z, light_pos.w };
+		float values[4] = { light_pos.x * reflected, light_pos.y, light_pos.z, light_pos.w };
 		multMatrixPoint(VIEW, values, mult);
 		string location = "uni_pointlights[" + to_string(i) + "].position";
 		loc = glGetUniformLocation(shader->getProgramIndex(), location.c_str());
@@ -529,6 +553,9 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[9]);
 
+	glActiveTexture(GL_TEXTURE11);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[11]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
@@ -549,13 +576,32 @@ void renderScene(void) {
 	}
 	glEnable(GL_CULL_FACE);
 
+	float car_pos_x = car.getPosition().x;
+	if (car_pos_x < 0) {
+		glStencilFunc(GL_NEVER, 1, 0x1);
+		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+		drawMirror(shader);
+		pushMatrix(MODEL);
+		glStencilFunc(GL_EQUAL, 1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glCullFace(GL_FRONT);
+		scale(MODEL, -1.0f, 1.0f, 1.0f);
+		setLights(-1.0f);
+		pushMatrix(MODEL);
+		multMatrix(MODEL, car.getBodyTransformations());
+		car.carRecursiveDraw(NULL, NULL, shader, 3, TextureArray);
+		popMatrix(MODEL);
+		drawObjects(false, 1);
+		glCullFace(GL_BACK);
+		popMatrix(MODEL);
+	}
 
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	drawObjects(false);
+	setLights(1.0f);
+	drawObjects(false, 0);
 
-	setLights();
 
 	glStencilFunc(GL_EQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -566,8 +612,8 @@ void renderScene(void) {
 	cameras[4]->setViewPort(WinX, WinY);
 	if (current_camera == 3) {
 		car.drawCar(shader, cameras[3], 3, TextureArray, true, cameras[4]);
-		drawObjects(true);
-		setLights();
+		drawObjects(true, 0);
+		setLights(1.0f);
 	}
 	glEnable(GL_CULL_FACE);
 	popMatrix(VIEW);
@@ -575,10 +621,13 @@ void renderScene(void) {
 	glStencilFunc(GL_ALWAYS, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
+
+
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	hud.renderText(shaderText);
+
 
 	update();
 
@@ -843,13 +892,14 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(11, TextureArray);
+	glGenTextures(12, TextureArray);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "cactus.png", 9);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
 	Texture2D_Loader(TextureArray, "sun.tga", 10);
+	Texture2D_Loader(TextureArray, "sand.jpg", 11);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -866,8 +916,11 @@ void init()
 	road.doLeftCurve();
 	road.doRoad(25);
 	road.doLeftCurve();
-	road.doRoad(5);
-	road.doRightCurve();
+	road.doRoad(50);
+	road.doLeftCurve();
+	road.doRoad(25);
+	road.doLeftCurve();
+	road.doRoad(25);
 	road.doFinishLine();
 
 	int n_cherrios = rand() % 5;
@@ -947,6 +1000,15 @@ void init()
 	amesh = createQuad(1, 1);
 	myMeshes.push_back(amesh);
 	loadFlareFile(&AVTflare, "flare.txt");
+	
+	float amb_mirror[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+	float diff_mirror[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+	float spec_mirror[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float emissive_mirror[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	amesh = createQuad(1, 1);
+	setMesh(amesh, amb_mirror, diff_mirror, spec_mirror, emissive_mirror, shininess, 0);
+
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

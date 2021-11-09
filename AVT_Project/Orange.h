@@ -131,9 +131,9 @@ public:
 		builder.setShaders(shader, stalk);
 		pushMatrix(MODEL);
 		stalkTransformations();
-		if (countdown == 0) {
+		/*if (countdown == 0) {
 			builder.drawMesh(stalk, shader);
-		}
+		}*/
 		popMatrix(MODEL);
 		//-----------------------------------------
 	}

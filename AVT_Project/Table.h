@@ -56,8 +56,8 @@ public:
 		this->legHeight = legHeight;
 	}
 
-	void chengeScenery() {
-		scenery += 1;
+	void changeScenery() {
+		scenery = (scenery + 1)%2;
 	}
 
 	int getScenery() {
@@ -153,9 +153,15 @@ public:
 		}
 	}
 
-	void drawTable(VSShaderLib* shader, GLuint* textures, int offset) {
+	void drawTable(VSShaderLib* shader, GLuint* textures, int offset, int scene_offset) {
 		MeshBuilder builder;
 		builder.setShaders(shader, base);
+		if (scene_offset + scenery == 1) {
+			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 11);
+		}
+		else {
+			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 0);
+		}	
 		pushMatrix(MODEL);
 		translate(MODEL, -width / 2, -thickness, -height / 2);
 		translate(MODEL, getPosition().x, getPosition().y, getPosition().z);

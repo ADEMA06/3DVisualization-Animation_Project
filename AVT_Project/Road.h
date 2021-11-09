@@ -133,7 +133,7 @@ public:
 			vec3 n_dir = dir.normalize();
 
 			float dot = camera_direction.dot(n_dir);
-
+			dot = 0.51;
 			if (!culling) {
 				dist = 1;
 				dot = 0.51;
