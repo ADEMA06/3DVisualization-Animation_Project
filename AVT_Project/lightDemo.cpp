@@ -75,7 +75,7 @@ vec3 butter_pos(5.0f, 0.0f, 0.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
-BillBoardObject bb(vec3(40.0, 0.0, -30.0), 9);
+BillBoardObject bb(vec3(40.0, -1.0, -30.0), 9);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
@@ -707,7 +707,7 @@ void init()
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
-	Texture2D_Loader(TextureArray, "tree.tga", 9);
+	Texture2D_Loader(TextureArray, "cactus.png", 9);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 
