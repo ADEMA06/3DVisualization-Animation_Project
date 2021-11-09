@@ -75,7 +75,7 @@ vec3 butter_pos(5.0f, 0.0f, 0.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
-BillBoardObject bb(vec3(40.0, 0.0, -30.0), 9);
+BillBoardObject bb(vec3(40.0, 0.0, -30.0), 8);
 
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
@@ -122,10 +122,11 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
+GLint model_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc9;
-GLuint TextureArray[10];
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc;
+GLuint TextureArray[14];
 GLint texMode_uniformId;
 
 
@@ -159,16 +160,6 @@ vec3 currentPosition;
 
 void resetGame();
 
-//---------------Particles-------------------
-typedef struct {
-	float	life;		// vida
-	float	fade;		// fade
-	float	r, g, b;    // color
-	GLfloat x, y, z;    // posi��o
-	GLfloat vx, vy, vz; // velocidade 
-	GLfloat ax, ay, az; // acelera��o
-} Particle;
-//-------------------------------------------
 
 void timer(int value)
 {
@@ -385,18 +376,57 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
 
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[8]);
+
 	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[9]);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[9]);
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
-	glUniform1i(tex_loc9, 9);
+	glUniform1i(tex_loc8, 8);
+	glUniform1i(tex_cube_loc, 9);
 
 	glUniform1i(pause_on_Id, keys['s']);
 
-	int objId = 0;
+
+
+	int objId = 3;
+
+	//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
+	glDepthMask(GL_FALSE);
+	glFrontFace(GL_CW); // set clockwise vertex order to mean the front
+
+	pushMatrix(MODEL);
+	pushMatrix(VIEW);  //se quiser anular a translação
+
+	//  Fica mais realista se não anular a translação da câmara 
+	// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
+	mMatrix[VIEW][12] = 0.0f;
+	mMatrix[VIEW][13] = 0.0f;
+	mMatrix[VIEW][14] = 0.0f;
+
+	scale(MODEL, 100.0f, 100.0f, 100.0f);
+	translate(MODEL, -0.5f, -0.5f, -0.5f);
+
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
+	glUniform1i(loc, myMeshes[objId].mat.texCount);
+
+	// send matrices to OGL
+	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+
+	glBindVertexArray(myMeshes[objId].vao);
+	glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+	popMatrix(MODEL);
+	popMatrix(VIEW);
+
+	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
+	glDepthMask(GL_TRUE);
 	
 	pushMatrix(VIEW);
 	glDisable(GL_CULL_FACE);
@@ -407,8 +437,6 @@ void renderScene(void) {
 		car.drawCar(shader, cameras[2], 3, TextureArray, false, NULL);
 	}
 	glEnable(GL_CULL_FACE);
-
-
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -617,7 +645,9 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader->getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader->getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader->getProgramIndex(), "texmap3");
-	tex_loc9 = glGetUniformLocation(shader->getProgramIndex(), "texmap9");
+	tex_loc8 = glGetUniformLocation(shader->getProgramIndex(), "texmap8");
+	tex_cube_loc = glGetUniformLocation(shader->getProgramIndex(), "cubeMap");
+	model_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_Model");
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader->getAllInfoLogs().c_str());
 
 	shaderText->init();
@@ -658,6 +688,7 @@ void init()
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float shininess = 100.0f;
 	int texcount = 0;
+	int skyboxcount = 9;
 
 	isGameOver = false;
 
@@ -703,13 +734,17 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(10, TextureArray);
+	glGenTextures(14, TextureArray);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
-	Texture2D_Loader(TextureArray, "tree.tga", 9);
+	Texture2D_Loader(TextureArray, "tree.tga", 8);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
+	//Sky Box Texture Object
+	const char* filenames[] = { "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png" };
+
+	TextureCubeMap_Loader(TextureArray, filenames, 9);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };
@@ -800,6 +835,9 @@ void init()
 	amesh.rotation = vec3(0.0f, 0.0f, 1.0f);
 	float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
 	setMesh(amesh, green, green, spec, emissive, shininess, texcount);
+
+	amesh = createCube();
+	setMesh(amesh, amb, diff, spec, emissive, shininess, skyboxcount);
 
 	helpCube = createCube();
 	setMesh(helpCube, red, red, spec, emissive, shininess, texcount);

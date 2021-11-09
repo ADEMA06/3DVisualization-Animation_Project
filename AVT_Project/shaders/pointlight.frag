@@ -5,8 +5,9 @@ uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
+uniform sampler2D texmap8;
+uniform samplerCube cubeMap;
 
-uniform sampler2D texmap9;
 uniform int pause_on;
 
 uniform int texMode;
@@ -57,6 +58,8 @@ in Data {
 	vec3 eye;
 	vec3 lightDir;
 	vec2 tex_coord;
+	vec2 sphere_coord;
+	vec3 skyboxTexCoord;
 } DataIn;
 
 
@@ -182,8 +185,8 @@ void main() {
 			colorOut = mat.diffuse * texel;
 	}
   
-	else if(mat.texCount == 9 && texMode == 1){
-		texel = texture(texmap9, DataIn.tex_coord);
+	else if(mat.texCount == 8 && texMode == 1){
+		texel = texture(texmap8, DataIn.tex_coord);
 		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
 		
 		if(texel.a == 0.0) discard;
@@ -192,6 +195,9 @@ void main() {
 			colorOut = vec4(vec3(colorOut), texel.a);
 		}
 			
+	}
+	else if(mat.texCount == 9){
+		colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
 	}
 
 	if(diffMapCount != 0 && diffMapCount == 1)
