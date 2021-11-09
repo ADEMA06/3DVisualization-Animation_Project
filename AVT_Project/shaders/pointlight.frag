@@ -71,8 +71,8 @@ struct LightAttr {
 LightAttr spotLighting(LightAttr splight, vec3 normal, vec3 spot_l, vec3 spot_dir, float cutOff, vec3 eye) {
 	
 	splight.intensity = 0.0f;
-	splight.intensity = max(dot(normal, spot_l),0.0);
 	if(spot_on != 0 && pause_on == 0) {
+	splight.intensity = max(dot(normal, spot_l),0.0);
 		if(dot(spot_dir, spot_l) > spotlights[0].cutOff) {
 			if (splight.intensity > 0.0) {
 				vec3 h = normalize(spot_l + eye);
@@ -148,8 +148,6 @@ void main() {
 	light = spotLighting(light, n, spot_l1, spot_dir1, spotlights[0].cutOff, e);
 
 	light = spotLighting(light, n, spot_l2, spot_dir2, spotlights[1].cutOff, e);
-
-	light.intensity = 0;
 	for(int i = 0; i < 6; i = i+1) {
 		light = pointLighting(light, n, pointlights[i].lightDir, e);
 	}
@@ -177,7 +175,7 @@ void main() {
 
 	else if(mat.texCount == 4){
 		texel = texture(texmap3, DataIn.tex_coord);
-		if((texel.a <= 0.05)  || (mat.diffuse.a == 0)) discard;
+		if((texel.a <= 0.25)  || (mat.diffuse.a == 0)) discard;
 		else
 			colorOut = mat.diffuse * texel;
 	}
@@ -189,7 +187,7 @@ void main() {
 		if(texel.a == 0.0) discard;
 		else { //FIGURE THIS OUT
 			vec3 c = vec3(max(light.intensity*texel.rgb + spec.rgb, 0.1*texel.rgb));
-			colorOut = vec4(vec3(colorOut), texel.a);
+			colorOut = vec4(vec3(c), texel.a);
 		}
 			
 	}

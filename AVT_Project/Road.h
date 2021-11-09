@@ -10,7 +10,7 @@
 float height_t = 0.0f;
 class Road {
 	struct MyMesh* mesh;
-	float width = 5.0f;
+	float width = 10.0f;
 	vec3 last_pos;
 	std::vector<Cheerio*> limits;
 	std::list<Cheerio*> visible;
@@ -45,7 +45,7 @@ public:
 		float initial_z = direction.z;
 
 		vec3 curve_front = vec3(direction.x == 1.0f ? last_pos.x : last_pos.x + direction.z * width / 2, height_t, direction.z == 1.0f ? last_pos.z : last_pos.z - direction.x * width/2);
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < int(width)+1; i++) {
 			Cheerio* c = new Cheerio(curve_front + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
@@ -63,13 +63,13 @@ public:
 		}
 		
 		vec3 curve_right = vec3(abs(direction.x) == 1.0f ? last_pos.x - direction.x * width/2: last_pos.x + direction.z * width, height_t, abs(direction.z) == 1.0f ? last_pos.z - direction.z * width/2 : last_pos.z  - direction.x * width);
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < int(width) + 1; i++) {
 			Cheerio* c = new Cheerio(curve_right + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
 
 
-		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? 2.5 * direction.x : 2.5 * initial_x, 0, abs(direction.z) == 1.0f ? 2.5 * direction.z: 2.5 * initial_z) + direction;
+		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? width / 2 * direction.x : width / 2 * initial_x, 0, abs(direction.z) == 1.0f ? width / 2 * direction.z: width / 2 * initial_z) + direction;
 	}
 
 	void doLeftCurve() {
@@ -79,7 +79,7 @@ public:
 
 
 		vec3 curve_front = vec3(direction.x == 1.0f ? last_pos.x : last_pos.x - direction.z * width / 2, height_t, direction.z == 1.0f ? last_pos.z : last_pos.z + direction.x * width / 2);
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < int(width) + 1; i++) {
 			Cheerio* c = new Cheerio(curve_front + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
@@ -99,13 +99,13 @@ public:
 
 
 		vec3 curve_right = vec3(abs(direction.x) == 1.0f ? last_pos.x - direction.x * width / 2 : last_pos.x - direction.z * width, height_t, abs(direction.z) == 1.0f ? last_pos.z - direction.z * width / 2 : last_pos.z + direction.x * width);
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < int(width) + 1; i++) {
 			Cheerio* c = new Cheerio(curve_right + direction * float(i), vec4(1.0f, 0.874f, 0.0f, 1.0f));
 			limits.push_back(c);
 		}
 
 
-		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? 2.5 * direction.x : 2.5 * initial_x, 0, abs(direction.z) == 1.0f ? 2.5 * direction.z : 2.5 * initial_z) + direction;
+		last_pos = last_pos + vec3(abs(direction.x) == 1.0f ? width/2 * direction.x : width / 2 * initial_x, 0, abs(direction.z) == 1.0f ? width / 2 * direction.z : width / 2 * initial_z) + direction;
 	}
 
 	bool carPassedFlag(vec3 car_pos) {

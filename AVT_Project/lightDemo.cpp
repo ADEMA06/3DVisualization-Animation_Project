@@ -293,7 +293,6 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 
 	// Render each element. To be used Texture Unit 0
 
-	glUniform1i(tex_loc3, 3);  //use TU 0
 
 	for (i = 0; i < flare->nPieces; ++i)
 	{
@@ -311,7 +310,13 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 
 		height = (int)((float)m_viewport[3] / (float)m_viewport[2] * (float)width);
 		memcpy(diffuse, flare->element[i].matDiffuse, 4 * sizeof(float));
-		diffuse[3] *= scaleDistance;   //scale the alpha channel
+		diffuse[3] *= scaleDistance ;   //scale the alpha channel
+		if (i == 0) {
+			glUniform1i(tex_loc3, 10);
+		}
+		else {
+			glUniform1i(tex_loc3, 3);
+		}
 
 		if (width > 1)
 		{
@@ -321,8 +326,14 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 			loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
 			glUniform1i(loc, 4);
 
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+			if (i == 0) {
+				glActiveTexture(GL_TEXTURE10);
+				glBindTexture(GL_TEXTURE_2D, TextureArray[10]);
+			}
+			else {
+				glActiveTexture(GL_TEXTURE3);
+				glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+			}
 			pushMatrix(MODEL);
 			translate(MODEL, (float)(px - width * 0.0f), (float)(py - height * 0.0f), 0.0f);
 			scale(MODEL, (float)width, (float)height, 1);
@@ -838,7 +849,7 @@ void init()
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "cactus.png", 9);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
-
+	Texture2D_Loader(TextureArray, "sun.tga", 10);
 
 	MyMesh* torus = new MyMesh;
 	float diff1[] = { 1.0f, 0.874f, 0.0f, 1.0f };

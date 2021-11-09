@@ -31,7 +31,7 @@ void Texture2D_Loader(unsigned int *textureArray, const char *strFileName, int I
 	ILint bpp = ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
 	
 	GLenum format = GL_RGB;
-	//printf("bpp=%d\n", bpp);
+	printf("bpp=%d\n", bpp);
 	
 	if (bpp == 24)
 		format = GL_RGB;
