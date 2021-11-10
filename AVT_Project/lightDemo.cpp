@@ -131,7 +131,7 @@ GLint model_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc;
-GLuint TextureArray[14];
+GLuint TextureArray[16];
 GLint texMode_uniformId;
 
 
@@ -394,12 +394,60 @@ void drawMirror(VSShaderLib *shader) {
 	builder.drawMesh(myMeshes[myMeshes.size() - 1], shader);
 	popMatrix(MODEL);
 }
+//--------------------------------------------------------------------------------------------------------//
+
+//--------------------------------------------------------------------------------------------------------//
+//                                           MIRROR                                                       //
+//--------------------------------------------------------------------------------------------------------//
+void drawSkybox(VSShaderLib* shader) {
+	GLint loc;
+	int objId = 3;
+	//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
+	glDepthMask(GL_FALSE);
+	glFrontFace(GL_CW); // set clockwise vertex order to mean the front
+
+	pushMatrix(MODEL);
+	pushMatrix(VIEW);  //se quiser anular a translação
+
+	//  Fica mais realista se não anular a translação da câmara 
+	// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
+	mMatrix[VIEW][12] = 0.0f;
+	mMatrix[VIEW][13] = 0.0f;
+	mMatrix[VIEW][14] = 0.0f;
+
+	scale(MODEL, 100.0f, 100.0f, 100.0f);
+	translate(MODEL, -0.5f, -0.5f, -0.5f);
+
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
+	glUniform1i(loc, myMeshes[objId].mat.texCount);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.specular");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+
+	GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+	glUniform1i(diffMapCount_loc, 0);
 
 
+	// send matrices to OGL
+	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+
+	glBindVertexArray(myMeshes[objId].vao);
+	glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+	popMatrix(MODEL);
+	popMatrix(VIEW);
+
+	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
+	glDepthMask(GL_TRUE);
+}
 //--------------------------------------------------------------------------------------------------------//
 
 void drawObjects(bool repeated, int scene_offset) {
-	car.update(dt);
 	for (int i = 0; i < oranges.size() && !repeated; i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
@@ -433,7 +481,6 @@ void drawObjects(bool repeated, int scene_offset) {
 	if (road.carPassedFlag(car_pos) && !isPassingFlag) {
 		isPassingFlag = true;
 		table.changeScenery();
-		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 	}
 
 	if (!road.carPassedFlag(car_pos) && isPassingFlag) {
@@ -550,8 +597,8 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[10]);
 
-	glActiveTexture(GL_TEXTURE11);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[11]);
+	glActiveTexture(GL_TEXTURE15);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[15]);
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
@@ -569,7 +616,7 @@ void renderScene(void) {
 	glUniform1i(pause_on_Id, keys['s']);
 
 
-
+	car.update(dt);
 	
 	
 	pushMatrix(VIEW);
@@ -598,47 +645,20 @@ void renderScene(void) {
 		car.carRecursiveDraw(NULL, NULL, shader, 3, TextureArray);
 		popMatrix(MODEL);
 		drawObjects(false, 1);
+		drawSkybox(shader);
 		glCullFace(GL_BACK);
 		popMatrix(MODEL);
+		glStencilFunc(GL_NOTEQUAL, 1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	}
-	int objId = 3;
 
-	//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
-	glDepthMask(GL_FALSE);
-	glFrontFace(GL_CW); // set clockwise vertex order to mean the front
-
-	pushMatrix(MODEL);
-	pushMatrix(VIEW);  //se quiser anular a translação
-
-	//  Fica mais realista se não anular a translação da câmara 
-	// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
-	mMatrix[VIEW][12] = 0.0f;
-	mMatrix[VIEW][13] = 0.0f;
-	mMatrix[VIEW][14] = 0.0f;
-
-	scale(MODEL, 100.0f, 100.0f, 100.0f);
-	translate(MODEL, -0.5f, -0.5f, -0.5f);
-
-	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
-	glUniform1i(loc, myMeshes[objId].mat.texCount);
-
-	GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
-	glUniform1i(diffMapCount_loc, 0);
-
-
-	// send matrices to OGL
-	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
-	computeDerivedMatrix(PROJ_VIEW_MODEL);
-	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-
-	glBindVertexArray(myMeshes[objId].vao);
-	glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-	popMatrix(MODEL);
-	popMatrix(VIEW);
-
-	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
-	glDepthMask(GL_TRUE);
+	if (table.getScenery() == 0) {
+		glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 10);
+	}
+	else {
+		glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 9);
+	}
+	drawSkybox(shader);
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -938,7 +958,7 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(14, TextureArray);
+	glGenTextures(16, TextureArray);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);

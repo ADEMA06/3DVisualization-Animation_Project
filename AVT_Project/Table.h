@@ -157,10 +157,12 @@ public:
 		MeshBuilder builder;
 		builder.setShaders(shader, base);
 		if (scene_offset + scenery == 1) {
-			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 11);
+			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 15);
+			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 9);
 		}
 		else {
 			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 0);
+			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 10);
 		}	
 		pushMatrix(MODEL);
 		translate(MODEL, -width / 2, -thickness, -height / 2);
