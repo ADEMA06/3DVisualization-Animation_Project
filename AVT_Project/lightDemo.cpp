@@ -131,7 +131,7 @@ GLint model_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc;
-GLuint TextureArray[14];
+GLuint TextureArray[16];
 GLint texMode_uniformId;
 
 
@@ -399,7 +399,6 @@ void drawMirror(VSShaderLib *shader) {
 //--------------------------------------------------------------------------------------------------------//
 
 void drawObjects(bool repeated, int scene_offset) {
-	car.update(dt);
 	for (int i = 0; i < oranges.size() && !repeated; i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
 			car.setPosition({1.0f, 0.0f, 1.0f});
@@ -433,7 +432,6 @@ void drawObjects(bool repeated, int scene_offset) {
 	if (road.carPassedFlag(car_pos) && !isPassingFlag) {
 		isPassingFlag = true;
 		table.changeScenery();
-		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 	}
 
 	if (!road.carPassedFlag(car_pos) && isPassingFlag) {
@@ -456,7 +454,7 @@ void drawObjects(bool repeated, int scene_offset) {
 	
 	table.drawTable(shader, TextureArray, 4, scene_offset);
 	
-	for (int i = 0; i < oranges.size(); i++) {
+	/**/for (int i = 0; i < oranges.size(); i++) {
 		oranges.at(i).updateSpeed(t);
 		oranges.at(i).drawOrange(shader);
 		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
@@ -472,7 +470,6 @@ void drawObjects(bool repeated, int scene_offset) {
 		//drawFlare(shader);
 	}
 	butter.drawButter(shader);
-	//car.drawBoundingBox(shader);
 }
 
 void setLights(float reflected) {
@@ -509,6 +506,8 @@ void renderScene(void) {
 	t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
+
+	car.update(dt);
 
 	GLint loc;
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -582,6 +581,7 @@ void renderScene(void) {
 	}
 	glEnable(GL_CULL_FACE);
 
+	int objId = 3;
 	float car_pos_x = car.getPosition().x;
 	if (car_pos_x < 0) {
 		glStencilFunc(GL_NEVER, 1, 0x1);
@@ -599,9 +599,55 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		drawObjects(false, 1);
 		glCullFace(GL_BACK);
+
+		pushMatrix(MODEL);
+		pushMatrix(VIEW);  //se quiser anular a translação
+
+		//  Fica mais realista se não anular a translação da câmara 
+		// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
+		mMatrix[VIEW][12] = 0.0f;
+		mMatrix[VIEW][13] = 0.0f;
+		mMatrix[VIEW][14] = 0.0f;
+
+		scale(MODEL, 100.0f, 100.0f, 100.0f);
+		translate(MODEL, -0.5f, -0.5f, -0.5f);
+
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, myMeshes[objId].mat.texCount);
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.emissive);
+		loc = glGetUniformLocation(shader->getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+
+		GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
+		glUniform1i(diffMapCount_loc, 0);
+
+
+		// send matrices to OGL
+		glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+
+		glBindVertexArray(myMeshes[objId].vao);
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
 		popMatrix(MODEL);
+		popMatrix(VIEW);
+
+		glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
+		glDepthMask(GL_TRUE);
+
+		popMatrix(MODEL);
+		glStencilFunc(GL_NOTEQUAL, 1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	}
-	int objId = 3;
+
 
 	//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
 	glDepthMask(GL_FALSE);
@@ -621,6 +667,16 @@ void renderScene(void) {
 
 	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
 	glUniform1i(loc, myMeshes[objId].mat.texCount);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.diffuse");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.ambient");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.specular");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.emissive");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.emissive);
+	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.shininess");
+	glUniform1f(loc, myMeshes[objId].mat.shininess);
 
 	GLint diffMapCount_loc = glGetUniformLocation(shader->getProgramIndex(), "diffMapCount");
 	glUniform1i(diffMapCount_loc, 0);
@@ -1072,7 +1128,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.55f, 0.0f, 0.0f, 1.0f);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //may need to remove this
 	glEnable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);

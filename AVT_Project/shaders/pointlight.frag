@@ -211,7 +211,7 @@ void main() {
 	//for(int i = 0; i < 6; i = i+1) {
 	//	light = pointLighting(light, n, pointlights[i].lightDir, e);
 	//}
-
+	
 	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
 	float f = exp(-0.02*dist);
 
@@ -240,8 +240,8 @@ void main() {
 			colorOut = mat.diffuse * texel;
 	}
   
-	else if(mat.texCount == 9 && texMode == 1){
-		texel = texture(texmap9, DataIn.tex_coord);
+	else if(mat.texCount == 8 && texMode == 1){
+		texel = texture(texmap8, DataIn.tex_coord);
 		colorOut = (diffuse + spec) * texel + mat.ambient;
 		
 		if(texel.a == 0.0) discard;
