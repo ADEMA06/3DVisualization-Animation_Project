@@ -331,6 +331,19 @@ void multMatrixPoint(MatrixTypes aType, float *point, float *res) {
 	}
 }
 
+void multMatrixPoint(ComputedMatrixTypes aType, float* point, float* res) {
+
+	for (int i = 0; i < 4; ++i) {
+
+		res[i] = 0.0f;
+
+		for (int j = 0; j < 4; j++) {
+
+			res[i] += point[j] * mCompMatrix[aType][j * 4 + i];
+		}
+	}
+}
+
 void multMatrixPoint(float* aType, float* point, float* res) {
 	for (int i = 0; i < 4; ++i) {
 		res[i] = 0.0f;
@@ -423,7 +436,7 @@ bool project(float* objCoord, float* windowCoord, int* m_viewport) {
 
 	//gets point in clipping coordinates
 	//multMatrixPoint(PROJ_VIEW_MODEL, objCoord, point_tmp);
-	multMatrixPoint(PROJECTION, objCoord, point_tmp);
+	multMatrixPoint(PROJ_VIEW_MODEL, objCoord, point_tmp);
 	//normalize between -1 and 1 
 	if (point_tmp[3] == 0.0f)  //the w value
 		return false;

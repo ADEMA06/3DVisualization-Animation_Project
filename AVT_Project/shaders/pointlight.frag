@@ -66,23 +66,28 @@ in Data {
 struct LightAttr {
 	vec4 spec;
 	vec4 diffuse;
-	float intensity;
+	float dirIntensity;
+	float spotIntensity;
+	float pointIntensity;
 };
 
 
 
 LightAttr spotLighting(LightAttr splight, vec3 normal, vec3 spot_l, vec3 spot_dir, float cutOff, vec3 eye) {
 	
-	splight.intensity = 0.0f;
+	splight.spotIntensity = 0.0f;
 	if(spot_on != 0 && pause_on == 0) {
-	splight.intensity = max(dot(normal, spot_l),0.0);
+	splight.spotIntensity = max(dot(normal, spot_l),0.0);
 		if(dot(spot_dir, spot_l) > spotlights[0].cutOff) {
-			if (splight.intensity > 0.0) {
+			if (splight.spotIntensity > 0.0) {
 				vec3 h = normalize(spot_l + eye);
 				float intSpec = max(dot(h,normal), 0.0);
 				splight.spec += mat.specular * pow(intSpec, mat.shininess);
-				splight.diffuse += mat.diffuse * splight.intensity;
+				splight.diffuse += mat.diffuse * splight.spotIntensity;
 			}
+		}
+		else {
+			splight.spotIntensity = 0.0f;
 		}
 	}
 
@@ -93,14 +98,14 @@ LightAttr pointLighting(LightAttr splight, vec3 normal, vec3 lightDir, vec3 eye)
 	
 	if(point_on != 0 && pause_on == 0) {
 			float distance = sqrt(pow(lightDir.x,2) + pow(lightDir.y,2) + pow(lightDir.z,2));
-			float attenuation = 1.0/(1.0 + 0.1*distance+ 0.01*distance*distance);
+			float attenuation = 1.0/(1.0 + 0.9*distance+ 0.09*distance*distance);
 			vec3 l = normalize(lightDir);
-			splight.intensity += max(dot(normal,l), 0.0) * attenuation;
-			if (splight.intensity > 0.0) {
+			splight.pointIntensity += max(dot(normal,l), 0.0) * attenuation;
+			if (splight.pointIntensity > 0.0) {
 				vec3 h = normalize(l + eye);
 				float intSpec = max(dot(h,normal), 0.0);
 				splight.spec += mat.specular * pow(intSpec, mat.shininess)* attenuation;
-				splight.diffuse += mat.diffuse * splight.intensity;
+				splight.diffuse += mat.diffuse * splight.pointIntensity;
 			}
 		}
 
@@ -108,15 +113,14 @@ LightAttr pointLighting(LightAttr splight, vec3 normal, vec3 lightDir, vec3 eye)
 }
 
 LightAttr dirLighting(LightAttr light, vec3 normal, vec3 dir, vec3 eye) {
-	float dirIntensity = 0.0f;
 	if(dir_on != 0) {
-		dirIntensity = max(dot(normal, dir), 0.0);
-		if(dirIntensity > 0.0) {
+		light.dirIntensity = max(dot(normal, dir), 0.0);
+		if(light.dirIntensity > 0.0) {
 			vec3 h = normalize(dir + eye);
 			float intSpec = max(dot(h,normal), 0.0);
 			light.spec += mat.specular * pow(intSpec, mat.shininess);
 
-			light.diffuse += mat.diffuse * dirIntensity;
+			light.diffuse += mat.diffuse * light.dirIntensity;
 		}
 	}
 
@@ -146,13 +150,12 @@ void main() {
 	light.spec = vec4(0.0);
 	light.diffuse = vec4(0.0);
 
-	//light = dirLighting(light, n, dir_l, e);
+	light = dirLighting(light, n, dir_l, e);
 
-	//light = spotLighting(light, n, spot_l1, spot_dir1, spotlights[0].cutOff, e);
+	light = spotLighting(light, n, spot_l1, spot_dir1, spotlights[0].cutOff, e);
+	light = spotLighting(light, n, spot_l2, spot_dir2, spotlights[1].cutOff, e);
 
-	//light = spotLighting(light, n, spot_l2, spot_dir2, spotlights[1].cutOff, e);
-
-	float dirIntensity = 0.0f;
+	/*float dirIntensity = 0.0f;
     if(dir_on != 0) {
         dirIntensity = max(dot(n, dir_l), 0.0);
         if(dirIntensity > 0.0) {
@@ -207,30 +210,30 @@ void main() {
             }
         }
         
-    }
-	//for(int i = 0; i < 6; i = i+1) {
-	//	light = pointLighting(light, n, pointlights[i].lightDir, e);
-	//}
-	
+    }*/
+	for(int i = 0; i < 6; i = i+1) {
+		light = pointLighting(light, n, pointlights[i].lightDir, e);
+	}
+
 	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
 	float f = exp(-0.02*dist);
 
 
 	if(mat.texCount == 0){
-		colorOut = (diffuse + spec) + mat.ambient;	
+		colorOut = (light.diffuse + light.spec) + mat.ambient;	
 	}
 	else if(mat.texCount == 1){
 		texel = texture(texmap0, DataIn.tex_coord);
-		colorOut = (diffuse + spec) * texel  + mat.ambient;
+		colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 2){
 		texel = texture(texmap1, DataIn.tex_coord);
-		colorOut = (diffuse + spec) * texel  + mat.ambient;
+		colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
 	}
 	else if(mat.texCount == 3){
 		texel = texture(texmap2, DataIn.tex_coord);
 		texel1 = texture(texmap0, DataIn.tex_coord);
-		colorOut = (diffuse + spec) *  texel1 * texel  + mat.ambient;
+		colorOut = (light.diffuse + light.spec) *  texel1 * texel  + mat.ambient;
 	}
 
 	else if(mat.texCount == 4){
@@ -242,11 +245,11 @@ void main() {
   
 	else if(mat.texCount == 8 && texMode == 1){
 		texel = texture(texmap8, DataIn.tex_coord);
-		colorOut = (diffuse + spec) * texel + mat.ambient;
+		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
 		
 		if(texel.a == 0.0) discard;
 		else { //FIGURE THIS OUT
-			vec3 c = vec3(max(dirIntensity*texel.rgb + spec.rgb, 0.1*texel.rgb));
+			vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + spec.rgb, 0.1*texel.rgb));
 			colorOut = vec4(vec3(c), texel.a);
 		}
 			
@@ -256,7 +259,7 @@ void main() {
 	}
 
 	if(diffMapCount != 0 && diffMapCount == 1)
-		colorOut = (diffuse + spec) * texture(texUnitDiff, DataIn.tex_coord);
+		colorOut = (light.diffuse + light.spec) * texture(texUnitDiff, DataIn.tex_coord);
 
 	
 
