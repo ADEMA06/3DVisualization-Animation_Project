@@ -3,6 +3,8 @@
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
+uniform mat4 m_Model;   //por causa do cubo para a skybox
+
 
 uniform int instanced;
 uniform vec3 offsets[908];
@@ -45,6 +47,8 @@ out Data {
 	vec3 eye;
 	vec3 lightDir;
 	vec2 tex_coord;
+	vec2 sphere_coord;
+	vec3 skyboxTexCoord;
 } DataOut;
 
 void main () {
@@ -60,6 +64,8 @@ void main () {
 	//DataOut.lightDir = vec3(uni_spotlights.position - pos);
 	DataOut.eye = vec3(-pos);
 	DataOut.tex_coord = texCoord.st;
+	DataOut.skyboxTexCoord = vec3(m_Model * position);	//Transformação de modelação do cubo unitário 
+	DataOut.skyboxTexCoord.x = - DataOut.skyboxTexCoord.x; //Texturas mapeadas no interior logo negar a coordenada x
 
 	dirlight.direction = -uni_dirlight.direction;
 
