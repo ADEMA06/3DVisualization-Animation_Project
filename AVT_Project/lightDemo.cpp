@@ -305,7 +305,7 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 		memcpy(diffuse, flare->element[i].matDiffuse, 4 * sizeof(float));
 		diffuse[3] *= scaleDistance ;   //scale the alpha channel
 		if (i == 0) {
-			glUniform1i(tex_loc3, 10);
+			glUniform1i(tex_loc3, 14);
 		}
 		else {
 			glUniform1i(tex_loc3, 3);
@@ -320,8 +320,8 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 			glUniform1i(loc, 4);
 
 			if (i == 0) {
-				glActiveTexture(GL_TEXTURE10);
-				glBindTexture(GL_TEXTURE_2D, TextureArray[10]);
+				glActiveTexture(GL_TEXTURE14);
+				glBindTexture(GL_TEXTURE_2D, TextureArray[14]);
 			}
 			else {
 				glActiveTexture(GL_TEXTURE3);
@@ -390,6 +390,7 @@ void drawMirror(VSShaderLib *shader) {
 	rotate(MODEL, -90.0f, 0.0f, 1.0f, 0.0f);
 	translate(MODEL, 0.0f, 2.0f, 0.0f);
 	scale(MODEL, 10.0f, 4.0f, 10.0f);
+	glEnable(GL_DEPTH_TEST);
 	builder.setShaders(shader, myMeshes[myMeshes.size() - 1]);
 	builder.drawMesh(myMeshes[myMeshes.size() - 1], shader);
 	popMatrix(MODEL);
@@ -415,7 +416,7 @@ void drawSkybox(VSShaderLib* shader) {
 	mMatrix[VIEW][13] = 0.0f;
 	mMatrix[VIEW][14] = 0.0f;
 
-	scale(MODEL, 100.0f, 100.0f, 100.0f);
+	scale(MODEL, 300.0f, 300.0f, 300.0f);
 	translate(MODEL, -0.5f, -0.5f, -0.5f);
 
 	loc = glGetUniformLocation(shader->getProgramIndex(), "mat.texCount");
@@ -504,12 +505,23 @@ void drawObjects(bool repeated, int scene_offset) {
 	table.drawTable(shader, TextureArray, 4, scene_offset);
 	
 	for (int i = 0; i < oranges.size(); i++) {
-		oranges.at(i).updateSpeed(t);
-		oranges.at(i).drawOrange(shader);
-		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
+		if (!repeated && oranges.at(i).getPosition().x < 0) {
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		}
+		if (repeated && oranges.at(i).getPosition().x > 0 && abs(oranges.at(i).getPosition().z) >= 5.0f) {
+			//printf("%f %f %f\n", oranges.at(i).getPosition().x, oranges.at(i).getPosition().y, oranges.at(i).getPosition().z);
+			oranges.at(i).drawOrange(shader);
+		}
+		else if (!repeated) {
+			oranges.at(i).drawOrange(shader);
+		}
+		
+		if (!repeated && oranges.at(i).getPosition().x < 0) {
+			glStencilFunc(GL_EQUAL, 0, 0xFF);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		}
 	}
-
-
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
 	if(current_camera == 2) {
 		bb.drawBillBoard(cameras[current_camera]->getPosition(), shader);
@@ -556,6 +568,8 @@ void renderScene(void) {
 	t = glutGet(GLUT_ELAPSED_TIME);
 	dt = (t - oldTime) / 1000;
 	oldTime = t;
+
+	float backup_view[16];
 
 	GLint loc;
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -617,6 +631,10 @@ void renderScene(void) {
 
 
 	car.update(dt);
+	for (int i = 0; i < oranges.size(); i++) {
+		//oranges.at(i).updateSpeed(t);
+		//oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
+	}
 	
 	
 	pushMatrix(VIEW);
@@ -627,43 +645,11 @@ void renderScene(void) {
 	else {
 		car.drawCar(shader, cameras[2], 4, TextureArray, false, NULL);
 	}
+
+	memcpy(backup_view, mMatrix[VIEW], 16 * sizeof(float));
 	glEnable(GL_CULL_FACE);
 
-	float car_pos_x = car.getPosition().x;
-	if (car_pos_x < 0) {
-		glStencilFunc(GL_NEVER, 1, 0x1);
-		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-		drawMirror(shader);
-		pushMatrix(MODEL);
-		glStencilFunc(GL_EQUAL, 1, 0x1);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		glCullFace(GL_FRONT);
-		scale(MODEL, -1.0f, 1.0f, 1.0f);
-		setLights(-1.0f);
-		pushMatrix(MODEL);
-		multMatrix(MODEL, car.getBodyTransformations());
-		car.carRecursiveDraw(NULL, NULL, shader, 3, TextureArray);
-		popMatrix(MODEL);
-		drawObjects(false, 1);
-		drawSkybox(shader);
-		glCullFace(GL_BACK);
-		popMatrix(MODEL);
-		glStencilFunc(GL_NOTEQUAL, 1, 0x1);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	}
 
-	if (table.getScenery() == 0) {
-		glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 10);
-	}
-	else {
-		glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 9);
-	}
-	drawSkybox(shader);
-
-	glStencilFunc(GL_NOTEQUAL, 1, 0x1);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	setLights(1.0f);
-	drawObjects(false, 0);
 
 
 	glStencilFunc(GL_EQUAL, 1, 0x1);
@@ -676,15 +662,54 @@ void renderScene(void) {
 	if (current_camera == 3) {
 		car.drawCar(shader, cameras[3], 3, TextureArray, true, cameras[4]);
 		drawObjects(true, 0);
+		drawSkybox(shader);
 		setLights(1.0f);
 	}
 	glEnable(GL_CULL_FACE);
 	popMatrix(VIEW);
 	popMatrix(PROJECTION);
+
+
+	float car_pos_x = car.getPosition().x;
+	if (car_pos_x < 0) {
+		pushMatrix(VIEW);
+		memcpy(mMatrix[VIEW], backup_view, 16 * sizeof(float));
+		glStencilFunc(GL_NEVER, 2, 0x1);
+		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+		drawMirror(shader);
+		pushMatrix(MODEL);
+		glStencilFunc(GL_EQUAL, 2, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glCullFace(GL_FRONT);
+		scale(MODEL, -1.0f, 1.0f, 1.0f);
+		setLights(-1.0f);
+		pushMatrix(MODEL);
+		multMatrix(MODEL, car.getBodyTransformations());
+		car.carRecursiveDraw(NULL, NULL, shader, 3, TextureArray);
+		popMatrix(MODEL);
+		drawObjects(true, 1);
+		drawSkybox(shader);
+		glCullFace(GL_BACK);
+		popMatrix(MODEL);
+		popMatrix(VIEW);
+	}
+
+	pushMatrix(VIEW);
+	memcpy(mMatrix[VIEW], backup_view, 16 * sizeof(float));
+	glStencilFunc(GL_EQUAL, 0, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	setLights(1.0f);
+	if (table.getScenery() == 0) {
+		glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 10);
+	}
+	else {
+		glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 9);
+	}
+	drawSkybox(shader);
+	drawObjects(false, 0);
+	popMatrix(VIEW);
 	glStencilFunc(GL_ALWAYS, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-
 
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
@@ -1026,11 +1051,11 @@ void init()
 	table.createTable(TextureArray, 5);
 	butter.createButter();
 
-	Orange orange1(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);
-	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 6.0f, 0);
-	Orange orange3(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 7.0f, 0);
-	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 6.0f, 0);
-	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 0.2f }, color_tire, 1.0f, 5.0f, 0);
+	Orange orange1({1.0, 0.0, 4.0}, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 5.0f, 0);
+	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 6.0f, 0);
+	Orange orange3(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 7.0f, 0);
+	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 6.0f, 0);
+	Orange orange5(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 5.0f, 0);
 
 	orange1.createOrange();
 	orange2.createOrange();
