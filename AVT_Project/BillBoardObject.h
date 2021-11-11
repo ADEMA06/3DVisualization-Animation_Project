@@ -53,8 +53,10 @@ public:
 		quad.mat.texCount = this->texcount;
 	}
 
-	void drawBillBoard(vec3 cam_pos, VSShaderLib* shader) {
-		glEnable(GL_BLEND);
+	void drawBillBoard(vec3 cam_pos, VSShaderLib* shader, int shadows) {
+
+		if(!shadows)
+			glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glUniform1i(texMode_uniformId, 1); // draw textured quads
 

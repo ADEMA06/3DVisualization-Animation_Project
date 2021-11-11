@@ -153,7 +153,7 @@ public:
 		popMatrix(MODEL);
 		
 
-		flag->draw(shader);
+		//flag->draw(shader);
 	}
 
 

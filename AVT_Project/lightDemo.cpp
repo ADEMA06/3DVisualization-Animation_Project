@@ -98,8 +98,8 @@ bool isGameOver;
 int current_camera = 0;
 Camera* cameras[5];
 
-VSShaderLib *shader = new VSShaderLib();
-VSShaderLib *shaderText = new VSShaderLib();
+VSShaderLib* shader = new VSShaderLib();
+VSShaderLib* shaderText = new VSShaderLib();
 
 //File with the font
 const string font_name = "fonts/arial.ttf";
@@ -130,9 +130,10 @@ GLint lPos_uniformId;
 GLint model_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8; 
+GLint tex_cube_loc, tex_normalMap_loc;
 GLuint TextureArray[16];
-GLint texMode_uniformId;
+GLint texMode_uniformId, shadowMode_uniformId;
 
 
 // Camera Position
@@ -162,7 +163,7 @@ Light directionalLight;
 //-------------------------------------------
 
 bool mouse_pressed = false;
-vec3 oldPosition = vec3(0.0f,0.0f,0.0f);
+vec3 oldPosition = vec3(0.0f, 0.0f, 0.0f);
 vec3 currentPosition;
 
 void resetGame();
@@ -182,7 +183,7 @@ void timer(int value)
 void refresh(int value)
 {
 	glutPostRedisplay();
-	glutTimerFunc(1000/60, refresh, 0);
+	glutTimerFunc(1000 / 60, refresh, 0);
 }
 
 // ------------------------------------------------------------
@@ -194,7 +195,7 @@ void changeSize(int w, int h) {
 	cameras[current_camera]->setViewPort(w, h);
 	WinX = w;
 	WinY = h;
-	lives->coordinates = { WinX/10.0f, WinY/10.0f };
+	lives->coordinates = { WinX / 10.0f, WinY / 10.0f };
 	pause->coordinates = { (WinX / 2.0f) - 75.0f, WinY / 2.0f };
 	points->coordinates = { WinX / 10.0f, WinY * 9.0f / 10.0f };
 	game_over->coordinates = { (WinX / 2.0f) - 100.0f, WinY / 2.0f };
@@ -203,11 +204,11 @@ void changeSize(int w, int h) {
 void pauseObjects() {
 	car.setPause(keys['s']);
 	butter.setPause(keys['s']);
-	for (Orange &o : oranges) {
+	for (Orange& o : oranges) {
 		o.setPause(keys['s']);
 	}
 
-	for (Cheerio *c : road.getLimits()) {
+	for (Cheerio* c : road.getLimits()) {
 		c->setPause(keys['s']);
 	}
 
@@ -303,7 +304,7 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 
 		height = (int)((float)m_viewport[3] / (float)m_viewport[2] * (float)width);
 		memcpy(diffuse, flare->element[i].matDiffuse, 4 * sizeof(float));
-		diffuse[3] *= scaleDistance ;   //scale the alpha channel
+		diffuse[3] *= scaleDistance;   //scale the alpha channel
 		if (i == 0) {
 			glUniform1i(tex_loc3, 14);
 		}
@@ -336,8 +337,8 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport, VSShaderLib
 			computeNormalMatrix3x3();
 			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
-			glBindVertexArray(myMeshes[4].vao);
-			glDrawElements(myMeshes[4].type, myMeshes[4].numIndexes, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(myMeshes[5].vao);
+			glDrawElements(myMeshes[5].type, myMeshes[5].numIndexes, GL_UNSIGNED_INT, 0);
 			glBindVertexArray(0);
 			popMatrix(MODEL);
 		}
@@ -353,7 +354,6 @@ void drawFlare(VSShaderLib* shader) {
 
 	//Make light position the first candle
 	float light_position[4] = { candles.at(0).getPointLight().position.x, candles.at(0).getPointLight().position.y, candles.at(0).getPointLight().position.z, 1.0f };
-	multMatrixPoint(VIEW, light_position, light_view_pos);
 
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
@@ -361,7 +361,7 @@ void drawFlare(VSShaderLib* shader) {
 	loadIdentity(MODEL);
 	computeDerivedMatrix(PROJ_VIEW_MODEL);  //pvm to be applied to lightPost. pvm is used in project function
 
-	if (!project(light_view_pos, lightScreenPos, m_viewport))
+	if (!project(light_position, lightScreenPos, m_viewport))
 		printf("Error in getting projected light in screen\n");  //Calculate the window Coordinates of the light position: the projected position of light on viewport
 	flarePos[0] = clampi((int)lightScreenPos[0], m_viewport[0], m_viewport[0] + m_viewport[2] - 1);
 	flarePos[1] = clampi((int)lightScreenPos[1], m_viewport[1], m_viewport[1] + m_viewport[3] - 1);
@@ -384,7 +384,7 @@ void drawFlare(VSShaderLib* shader) {
 //--------------------------------------------------------------------------------------------------------//
 //                                           MIRROR                                                       //
 //--------------------------------------------------------------------------------------------------------//
-void drawMirror(VSShaderLib *shader) {
+void drawMirror(VSShaderLib* shader) {
 	MeshBuilder builder;
 	pushMatrix(MODEL);
 	rotate(MODEL, -90.0f, 0.0f, 1.0f, 0.0f);
@@ -448,10 +448,10 @@ void drawSkybox(VSShaderLib* shader) {
 }
 //--------------------------------------------------------------------------------------------------------//
 
-void drawObjects(bool repeated, int scene_offset) {
+void drawObjects(bool repeated, int scene_offset, int shadows = 0) {
 	for (int i = 0; i < oranges.size() && !repeated; i++) {
 		if (car.checkCollision(oranges.at(i).getBoundingBox())) {
-			car.setPosition({1.0f, 0.0f, 1.0f});
+			car.setPosition({ 1.0f, 0.0f, 1.0f });
 			car.setSpeed(0.0f);
 			car.setDirectionAngle(0.0f);
 			car.resetBoundingBox();
@@ -468,16 +468,35 @@ void drawObjects(bool repeated, int scene_offset) {
 		}
 	}
 
-	
-	vec3 car_pos = car.getPosition();
-	for (auto const& cheerio : road.getVisible()) {
-		if (car.checkCollision(cheerio->getBoundingBox()) && !repeated) {
-			car.setPoints(car.getPoints() - 20);
-			cheerio->collision_reaction(car_pos, 1.1f, -1.0f);
+	if (car.getPosition().x > 50.0f || car.getPosition().x < -50.0f || car.getPosition().z > 50.0f || car.getPosition().z < -50.0f) {
+		car.setPosition({ 1.0f, 0.0f, 1.0f });
+		car.setSpeed(0.0f);
+		car.setDirectionAngle(0.0f);
+		car.resetBoundingBox();
+		car.decrementLives();
+		lives->text = "Lives: " + to_string(car.getLives());
+		car.setPoints(car.getPoints() - 20);
+		if (car.getLives() == 0) {
+			isGameOver = true;
+			keys['s'] = true;
+			pauseObjects();
+			pause->toRender = false;
+			game_over->toRender = true;
 		}
-		cheerio->update(dt);
 	}
 
+
+	vec3 car_pos = car.getPosition();
+	if(!repeated) {
+		for (auto const& cheerio : road.getVisible()) {
+			if (car.checkCollision(cheerio->getBoundingBox())) {
+				car.setPoints(car.getPoints() - 20);
+				cheerio->collision_reaction(car_pos, 1.1f, -1.0f);
+			}
+			cheerio->update(dt);
+		}
+	}
+	
 
 	if (road.carPassedFlag(car_pos) && !isPassingFlag) {
 		isPassingFlag = true;
@@ -487,23 +506,22 @@ void drawObjects(bool repeated, int scene_offset) {
 	if (!road.carPassedFlag(car_pos) && isPassingFlag) {
 		isPassingFlag = false;
 	}
-	
+
 	if (car.checkCollision(butter.getBoundingBox()) && !repeated) {
 		car.setPoints(car.getPoints() - 20);
 		butter.collision_reaction(car_pos, 1.1f, -1.0f);
 	}
 	butter.update(dt);
-	
-	vec3 camera_pos = cameras[2]->getPosition();
-	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
-	road.draw(shader, camera_pos, camera_direction.normalize(), current_camera == 2);
+
 
 	for (int i = 0; i < candles.size(); i++) {
 		candles.at(i).drawCandle(shader);
 	}
+	if(!shadows) {
+		table.drawTable(shader, TextureArray, 4, scene_offset);
+	}
 	
-	table.drawTable(shader, TextureArray, 4, scene_offset);
-	
+
 	for (int i = 0; i < oranges.size(); i++) {
 		if (!repeated && oranges.at(i).getPosition().x < 0) {
 			glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -516,20 +534,16 @@ void drawObjects(bool repeated, int scene_offset) {
 		else if (!repeated) {
 			oranges.at(i).drawOrange(shader);
 		}
-		
+
 		if (!repeated && oranges.at(i).getPosition().x < 0) {
 			glStencilFunc(GL_EQUAL, 0, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		}
 	}
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
-	if(current_camera == 2) {
-		bb.drawBillBoard(cameras[current_camera]->getPosition(), shader);
-	}
 	
-	if (table.getScenery() == 1) {
-		//drawFlare(shader);
-	}
+	drawFlare(shader);	
+
 	butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
 }
@@ -559,6 +573,28 @@ void setLights(float reflected) {
 	glUniform1i(loc, pointLights_on);
 }
 
+
+void drawShadowPlane(VSShaderLib* shader) {
+	MeshBuilder builder;
+	struct MyMesh base;
+	float amb[] = { 0.1f, 0.1f, 0.1f, 0.0f };
+	float diff[] = { 1.0f, 1.0f, 1.0f, 0.0f };
+	float spec[] = { 0.8f, 0.8f, 0.8f, 0.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	float shininess = 500.0f;
+	int texcount = 0;
+	vec3 pos = { 0,0,0 };
+	base = createCube();
+	base = builder.setMesh(base, amb, diff, spec, emissive, shininess, texcount, pos);
+
+	pushMatrix(MODEL);
+	scale(MODEL, 100.0f, 1, 100.0f);
+	translate(MODEL, - 0.5f, -1, - 0.5f);
+	builder.setShaders(shader, base);
+	builder.drawMesh(base, shader);
+	popMatrix(MODEL);
+}
+
 // ------------------------------------------------------------
 //
 // Render stufff
@@ -586,14 +622,14 @@ void renderScene(void) {
 	setCameraTarget();
 
 	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   
+	multMatrixPoint(VIEW, lightPos, res);
 	glUniform4fv(lPos_uniformId, 1, res);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);	
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
@@ -611,6 +647,9 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[10]);
 
+	glActiveTexture(GL_TEXTURE13);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[13]);
+
 	glActiveTexture(GL_TEXTURE15);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[15]);
 
@@ -619,6 +658,9 @@ void renderScene(void) {
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc8, 8);
+	glUniform1i(tex_normalMap_loc, 13);
+
+	
 
 	if (table.getScenery() == 0) {
 		glUniform1i(tex_cube_loc, 10);
@@ -632,11 +674,11 @@ void renderScene(void) {
 
 	car.update(dt);
 	for (int i = 0; i < oranges.size(); i++) {
-		//oranges.at(i).updateSpeed(t);
-		//oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
+		oranges.at(i).updateSpeed(t);
+		oranges.at(i).updatePosition(table_pos, 100.0f, 100.0f, dt);
 	}
-	
-	
+
+
 	pushMatrix(VIEW);
 	glDisable(GL_CULL_FACE);
 	if (current_camera == 3) {
@@ -648,9 +690,6 @@ void renderScene(void) {
 
 	memcpy(backup_view, mMatrix[VIEW], 16 * sizeof(float));
 	glEnable(GL_CULL_FACE);
-
-
-
 
 	glStencilFunc(GL_EQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -664,6 +703,9 @@ void renderScene(void) {
 		drawObjects(true, 0);
 		drawSkybox(shader);
 		setLights(1.0f);
+		vec3 cam_pos = cameras[current_camera]->getPosition();
+		vec3 cam_direction = vec3(car.getPosition().x - cam_pos.x, car.getPosition().y - cam_pos.y, car.getPosition().z - cam_pos.z);
+		road.draw(shader, cam_pos, cam_direction.normalize(), current_camera == 2);
 	}
 	glEnable(GL_CULL_FACE);
 	popMatrix(VIEW);
@@ -707,15 +749,74 @@ void renderScene(void) {
 	}
 	drawSkybox(shader);
 	drawObjects(false, 0);
+	bb.drawBillBoard(cameras[current_camera]->getPosition(), shader, 0);
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	glStencilFunc(GL_NEVER, 0x1, 0x1);
+	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+	drawShadowPlane(shader);
+
+	float mat[16];
+	float plano_chao[4] = { 0, 1, 0, 0 };
+	float light_pos[4] = { 0, 20, 0, 1 };
+
+
+	glUniform1i(shadowMode_uniformId, 1);  //Render with constant color
+	shadow_matrix(mat, plano_chao, light_pos);
+
+	glDisable(GL_DEPTH_TEST);
+	glBlendFunc(GL_DST_COLOR, GL_ZERO);
+	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	pushMatrix(MODEL);
+	multMatrix(MODEL, mat);
+	vec3 camera_pos = cameras[current_camera]->getPosition();
+	vec3 camera_direction = vec3(car.getPosition().x - camera_pos.x, car.getPosition().y - camera_pos.y, car.getPosition().z - camera_pos.z);
+	road.draw(shader, camera_pos, camera_direction.normalize(), current_camera == 2);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	multMatrix(MODEL, mat);
+	multMatrix(MODEL, car.getBodyTransformations());
+	car.carRecursiveDraw(NULL, NULL, shader, 3, TextureArray);
+	popMatrix(MODEL);
+
+	pushMatrix(MODEL);
+	multMatrix(MODEL, mat);
+	drawObjects(true, 0, 1);
+	popMatrix(MODEL);
+	glUniform1i(shadowMode_uniformId, 0);
+
+
+	vec3 cam_pos = cameras[current_camera]->getPosition();
+	vec3 cam_direction = vec3(car.getPosition().x - cam_pos.x, car.getPosition().y - cam_pos.y, car.getPosition().z - cam_pos.z);
+	road.draw(shader, cam_pos, cam_direction.normalize(), current_camera == 2);
+
+	glEnable(GL_DEPTH_TEST);
+
+
+
+	pushMatrix(MODEL);
+	multMatrix(MODEL, car.getBodyTransformations());
+	glDisable(GL_CULL_FACE);
+	car.carRecursiveDraw(NULL, NULL, shader, 3, TextureArray);
+	glEnable(GL_CULL_FACE);
+	popMatrix(MODEL);
+
+	drawFlare(shader);
+	
+	
+
 	popMatrix(VIEW);
 	glStencilFunc(GL_ALWAYS, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	glDisable(GL_DEPTH_TEST);
+
 	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	hud.renderText(shaderText);
-
 
 	update();
 
@@ -731,7 +832,7 @@ void renderScene(void) {
 
 
 void processReleaseKeys(unsigned char key, int xx, int yy) {
-	if(key != 's') keys[key] = false;
+	if (key != 's') keys[key] = false;
 }
 
 void processKeys(unsigned char key, int xx, int yy)
@@ -742,7 +843,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		glutLeaveMainLoop();
 		break;
 
-	case 'c': 
+	case 'c':
 		pointLights_on = !pointLights_on;
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
@@ -762,10 +863,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'p': keys['p'] = true; break;
 
 	case 'e': table.Erupt(); break;
-	
+
 		//Reset game
 	case 'r': if (isGameOver) resetGame(); break;
-	
+
 		//Pause
 	case 's': if (!isGameOver) { keys['s'] = !keys['s']; pauseObjects(); pause->toRender = keys['s']; } break;
 	}
@@ -785,7 +886,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 		startX = xx;
 		startY = yy;
 		if (button == GLUT_LEFT_BUTTON) { tracking = 1; leftKey = true; }
-			
+
 		else if (button == GLUT_RIGHT_BUTTON)
 			tracking = 2;
 
@@ -821,7 +922,7 @@ void processMouseMotion(int xx, int yy)
 
 	// left mouse button: move camera
 	if (tracking == 1) {
-	
+
 		alphaAux = alpha + deltaX;
 		betaAux = beta + deltaY;
 
@@ -841,9 +942,9 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	camX = 5*sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camZ = 5*cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = 5*sin(betaAux * 3.14f / 180.0f);
+	camX = 5 * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camZ = 5 * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camY = 5 * sin(betaAux * 3.14f / 180.0f);
 	cameras[2]->setSphericCoords(vec3(camX, camY, camZ));
 	//  uncomment this if not using an idle or refresh func
 	//	glutPostRedisplay();
@@ -882,6 +983,8 @@ GLuint setupShaders() {
 	glBindAttribLocation(shader->getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader->getProgramIndex(), NORMAL_ATTRIB, "normal");
 	glBindAttribLocation(shader->getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader->getProgramIndex(), TANGENT_ATTRIB, "tangent");
+
 
 	glLinkProgram(shader->getProgramIndex());
 	texMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "texMode");
@@ -897,6 +1000,8 @@ GLuint setupShaders() {
 	tex_loc8 = glGetUniformLocation(shader->getProgramIndex(), "texmap8");
 	tex_cube_loc = glGetUniformLocation(shader->getProgramIndex(), "cubeMap");
 	model_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_Model");
+	shadowMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "shadowMode");
+	tex_normalMap_loc = glGetUniformLocation(shader->getProgramIndex(), "normalMap");
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader->getAllInfoLogs().c_str());
 
 	shaderText->init();
@@ -945,7 +1050,7 @@ void init()
 
 	table_pos = vec3(0.0f, 0.0f, 0.0f);
 	car_pos = vec3(1.0f, 0.0f, 1.0f);
-	butter_pos = vec3(5.0f, 0.0f, 0.0f);
+	butter_pos = vec3(10.0f, 0.0f, 10.0f);
 	orange_pos = vec3(5.0f, 0.0f, 5.0f);
 
 
@@ -998,6 +1103,8 @@ void init()
 	const char* volcano_skybox[] = { "right_volc.jpg", "left_volc.jpg", "top_volc.jpg", "bottom_volc.jpg", "front_volc.jpg", "back_volc.jpg" };
 
 	TextureCubeMap_Loader(TextureArray, volcano_skybox, 10);
+
+	Texture2D_Loader(TextureArray, "sand_normal2.jpg", 13);
 	Texture2D_Loader(TextureArray, "sun.tga", 14);
 	Texture2D_Loader(TextureArray, "sand.jpg", 15);
 
@@ -1051,7 +1158,7 @@ void init()
 	table.createTable(TextureArray, 5);
 	butter.createButter();
 
-	Orange orange1({1.0, 0.0, 4.0}, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 5.0f, 0);
+	Orange orange1({ 1.0, 0.0, 4.0 }, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 5.0f, 0);
 	Orange orange2(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 6.0f, 0);
 	Orange orange3(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 7.0f, 0);
 	Orange orange4(orange_pos, { 0.7f, 0.2f, 0.0f, 1.0f }, color_tire, 1.0f, 6.0f, 0);
@@ -1103,7 +1210,7 @@ void init()
 	amesh = createQuad(1, 1);
 	myMeshes.push_back(amesh);
 	loadFlareFile(&AVTflare, "flare.txt");
-	
+
 	float amb_mirror[] = { 0.9f, 0.9f, 0.9f, 1.0f };
 	float diff_mirror[] = { 0.9f, 0.9f, 0.9f, 1.0f };
 	float spec_mirror[] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -1161,9 +1268,9 @@ int main(int argc, char** argv) {
 
 
 	//	Camera initialization	
-	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f, -55.0f);
+	OrtographicCamera camera1({ 0.0f, 15.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, -1000.0f, 16.0f, -55.0f, 55.0f, 55.0f, -55.0f);
 	PerspectiveCamera camera2({ 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, true, 0.01f, -1000.0f, 53.13f);
-	PerspectiveCamera camera3({-4.0f,1.0f,1.0f}, { 0, 0, 0}, false, 0.1f, 1000.0f, 53.13f);
+	PerspectiveCamera camera3({ -4.0f,1.0f,1.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
 	PerspectiveCamera camera4({ -0.2f, 0.0f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
 	PerspectiveCamera camera5({ 2.0f, 0.6f, 0.0f }, { 0, 0, 0 }, false, 0.1f, 1000.0f, 53.13f);
 	camera4.setSphericCoords(vec3(-0.4f, 0.5f, 0.001f));

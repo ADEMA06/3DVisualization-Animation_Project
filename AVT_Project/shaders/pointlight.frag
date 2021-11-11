@@ -7,8 +7,9 @@ uniform sampler2D texmap2;
 uniform sampler2D texmap3;
 uniform sampler2D texmap8;
 uniform samplerCube cubeMap;
-
+uniform sampler2D normalMap;
 uniform int pause_on;
+uniform int shadowMode;
 
 uniform int texMode;
 
@@ -49,6 +50,7 @@ in SpotLight spotlights[2];
 
 in vec4 pos;
 
+uniform mat4 m_View;
 
 uniform int diffMapCount;
 uniform	sampler2D texUnitDiff;
@@ -58,6 +60,7 @@ in Data {
 	vec3 eye;
 	vec3 lightDir;
 	vec2 tex_coord;
+	vec3 reflected;
 	vec2 sphere_coord;
 	vec3 skyboxTexCoord;
 } DataIn;
@@ -137,7 +140,7 @@ void main() {
 	vec4 spec = vec4(0.0);
 	vec4 diffuse = vec4(0.0);
 
-	vec3 n = normalize(DataIn.normal);
+	vec3 n;
 	vec3 dir_l = normalize(vec3(dirlight.direction));
 	vec3 l;
 	vec3 spot_l1 = normalize(spotlights[0].light_dir);
@@ -146,128 +149,98 @@ void main() {
 	vec3 spot_dir2 = normalize(vec3(spotlights[1].direction));
 	vec3 e = normalize(DataIn.eye);
 
-	LightAttr light;
-	light.spec = vec4(0.0);
-	light.diffuse = vec4(0.0);
+	if(texMode == 2)  // lookup normal from normal map, move from [0,1] to [-1, 1] range, normalize
+		n = normalize(2.0 * texture(normalMap, DataIn.tex_coord).rgb - 1.0);
+	else
+		n = normalize(DataIn.normal);
 
-	light = dirLighting(light, n, dir_l, e);
+	if(shadowMode == 1)  //constant color
+		colorOut = vec4(0.5, 0.5, 0.5, 1.0);
+	else {
+		LightAttr light;
+		light.spec = vec4(0.0);
+		light.diffuse = vec4(0.0);
 
-	light = spotLighting(light, n, spot_l1, spot_dir1, spotlights[0].cutOff, e);
-	light = spotLighting(light, n, spot_l2, spot_dir2, spotlights[1].cutOff, e);
+		light = dirLighting(light, n, dir_l, e);
 
-	/*float dirIntensity = 0.0f;
-    if(dir_on != 0) {
-        dirIntensity = max(dot(n, dir_l), 0.0);
-        if(dirIntensity > 0.0) {
-            vec3 h = normalize(dir_l + e);
-            float intSpec = max(dot(h,n), 0.0);
-            spec += mat.specular * pow(intSpec, mat.shininess);
+		light = spotLighting(light, n, spot_l1, spot_dir1, spotlights[0].cutOff, e);
+		light = spotLighting(light, n, spot_l2, spot_dir2, spotlights[1].cutOff, e);
 
-            diffuse += mat.diffuse * dirIntensity;
-        }
-    }
-
-    float spotIntensity = 0.0f;
-    spotIntensity = max(dot(n, spot_l1), 0.0);
-    if(spot_on != 0) {
-        if(dot(spot_dir1, spot_l1) > spotlights[0].cutOff) {
-            if (spotIntensity > 0.0) {
-                vec3 h = normalize(spot_l1 + e);
-                float intSpec = max(dot(h,n), 0.0);
-                spec += mat.specular * pow(intSpec, mat.shininess);
-                diffuse += mat.diffuse * spotIntensity;
-            }
-        }
-    }
-
-    float spotIntensity1 = 0.0f;
-    spotIntensity1 = max(dot(n, spot_l2), 0.0);
-    if(spot_on != 0) {
-        if(dot(spot_dir2, spot_l2) > spotlights[1].cutOff) {
-            if (spotIntensity1 > 0.0) {
-                vec3 h = normalize(spot_l2 + e);
-                float intSpec = max(dot(h,n), 0.0);
-                spec += mat.specular * pow(intSpec, mat.shininess);
-                diffuse += mat.diffuse * spotIntensity1;
-            }
-        }
-    }
-
-
-    float pointIntensity = 0.0;
-    for(int i = 0; i < 6; i = i+1) {
-        if(point_on != 0) {
-            float distance = sqrt(pow(pointlights[i].lightDir.x,2) + pow(pointlights[i].lightDir.y,2) + pow(pointlights[i].lightDir.z,2));
-            float attenuation = 1.0/(1.0 + 0.1*distance+ 0.01*distance*distance);
-            l = normalize(pointlights[i].lightDir);
-            pointIntensity += max(dot(n,l), 0.0) * attenuation;
-            
-            if (pointIntensity > 0.0) {
-                vec3 h = normalize(l + e);
-                float intSpec = max(dot(h,n), 0.0);
-                spec += mat.specular * pow(intSpec, mat.shininess)* attenuation;
-                diffuse += mat.diffuse * pointIntensity;
-            }
-        }
-        
-    }*/
-	for(int i = 0; i < 6; i = i+1) {
-		light = pointLighting(light, n, pointlights[i].lightDir, e);
-	}
-
-	float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
-	float f = exp(-0.02*dist);
-
-
-	if(mat.texCount == 0){
-		colorOut = (light.diffuse + light.spec) + mat.ambient;	
-	}
-	else if(mat.texCount == 1){
-		texel = texture(texmap0, DataIn.tex_coord);
-		colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
-	}
-	else if(mat.texCount == 2){
-		texel = texture(texmap1, DataIn.tex_coord);
-		colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
-	}
-	else if(mat.texCount == 3){
-		texel = texture(texmap2, DataIn.tex_coord);
-		texel1 = texture(texmap0, DataIn.tex_coord);
-		colorOut = (light.diffuse + light.spec) *  texel1 * texel  + mat.ambient;
-	}
-
-	else if(mat.texCount == 4){
-		texel = texture(texmap3, DataIn.tex_coord);
-		if((texel.a <= 0.25)  || (mat.diffuse.a == 0)) discard;
-		else
-			colorOut = mat.diffuse * texel;
-	}
-  
-	else if(mat.texCount == 8 && texMode == 1){
-		texel = texture(texmap8, DataIn.tex_coord);
-		colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
-		
-		if(texel.a == 0.0) discard;
-		else { //FIGURE THIS OUT
-			vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + spec.rgb, 0.1*texel.rgb));
-			colorOut = vec4(vec3(c), texel.a);
+		for(int i = 0; i < 6; i = i+1) {
+			light = pointLighting(light, n, pointlights[i].lightDir, e);
 		}
-			
-	}
-	else if(mat.texCount == 9){
-		colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
-	}
 
-	if(diffMapCount != 0 && diffMapCount == 1)
-		colorOut = (light.diffuse + light.spec) * texture(texUnitDiff, DataIn.tex_coord);
+		float dist = sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
+		float f = exp(-0.02*dist);
+
+
+		if(mat.texCount == 0){
+			if(texMode == 3){
+				vec4 cube_texel = texture(cubeMap, DataIn.reflected);
+				texel = texture(texmap1, DataIn.tex_coord);  // texel from lighwood.tga
+				vec4 aux_color = mix(texel, cube_texel, 0.9);
+				aux_color = max(light.diffuse*aux_color + light.spec, 0.1*aux_color);
+				colorOut = vec4(aux_color.rgb, 1.0); 
+			}
+			else{
+				colorOut = (light.diffuse + light.spec) + mat.ambient;
+			}
+		}
+		else if(mat.texCount == 1){
+			texel = texture(texmap0, DataIn.tex_coord);
+			colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
+		}
+		else if(mat.texCount == 2){
+			texel = texture(texmap1, DataIn.tex_coord);
+			colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
+		}
+		else if(mat.texCount == 3){
+			if(texMode == 0){
+				texel = texture(texmap2, DataIn.tex_coord);
+				texel1 = texture(texmap0, DataIn.tex_coord);
+				colorOut = (light.diffuse + light.spec) *  texel1 * texel  + mat.ambient;
+			}
+			else {
+				texel = texture(texmap2, DataIn.tex_coord);
+				texel1 = texture(texmap0, DataIn.tex_coord);
+				colorOut = vec4((max(light.dirIntensity * texel * texel1 + light.spec / 3, 0.2*texel*texel1)).rgb, 1.0f);
+			}
+		}
+
+		else if(mat.texCount == 4){
+			texel = texture(texmap3, DataIn.tex_coord);
+			if((texel.a <= 0.25)  || (mat.diffuse.a == 0)) discard;
+			else
+				colorOut = mat.diffuse * texel;
+		}
+  
+		else if(mat.texCount == 8 && texMode == 1){
+			texel = texture(texmap8, DataIn.tex_coord);
+			colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
+		
+			if(texel.a == 0.0) discard;
+			else { 
+				vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + light.spec.rgb, 0.1*texel.rgb));
+				colorOut = vec4(vec3(c), texel.a);
+			}
+			
+		}
+		else if(mat.texCount == 9){
+			colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
+		}
+
+		if(diffMapCount != 0 && diffMapCount == 1)
+			colorOut = (light.diffuse + light.spec) * texture(texUnitDiff, DataIn.tex_coord);
 
 	
 
-	vec3 colorRGB = vec3(colorOut);
-	vec3 fogColor = vec3(1.0f, 0.55f, 0.0f);
-	vec3 finalColor = mix(fogColor, colorRGB, f);
-	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
-	//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
+		vec3 colorRGB = vec3(colorOut);
+		vec3 fogColor = vec3(1.0f, 0.55f, 0.0f);
+		vec3 finalColor = mix(fogColor, colorRGB, f);
+		colorOut = vec4(vec3(colorOut), mat.diffuse.a);
+		//if(mat.texCount != 9)
+			//colorOut = vec4(vec3(finalColor), mat.diffuse.a);
 
-	if(pause_on == 1) colorOut = vec4(vec3(colorOut)/3, colorOut.a);
+		if(pause_on == 1) colorOut = vec4(vec3(colorOut)/3, colorOut.a);
+	}
 }

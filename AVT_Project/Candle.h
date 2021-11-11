@@ -47,6 +47,10 @@ public:
 		pushMatrix(MODEL);
 		translate(MODEL, getPosition().x, getPosition().y + height/2, getPosition().z);
 		rotate(MODEL, 90, 0, 1, 0);
+		GLint view_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_View");
+		glUniformMatrix4fv(view_uniformId, 1, GL_FALSE, mMatrix[VIEW]);
+		GLint texMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "texMode");
+		glUniform1i(texMode_uniformId, 3);
 		builder.drawMesh(candle, shader);
 		popMatrix(MODEL);
 		
