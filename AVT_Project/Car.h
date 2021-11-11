@@ -157,6 +157,7 @@ public:
 		vec3 speed_vector = getSpeedVector(dt);
 		offset = speed_vector;
 		setPosition(position + speed_vector);
+	
 		updateBoundingBox(body_transformations);
 	}
 
@@ -328,9 +329,9 @@ public:
 			drawRearView(shader);
 		}
 		drawScaledRearView(shader);
-		glDisable(GL_CULL_FACE);
-		carRecursiveDraw(carScene, carScene->mRootNode, shader, offset, textures);
-		glEnable(GL_CULL_FACE);
+		//glDisable(GL_CULL_FACE);
+		//carRecursiveDraw(carScene, carScene->mRootNode, shader, offset, textures);
+		//glEnable(GL_CULL_FACE);
 		popMatrix(MODEL);
 		updateBoundingBox(body_transformations);
 		if (repeated) {
