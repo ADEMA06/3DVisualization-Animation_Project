@@ -130,7 +130,8 @@ GLint lPos_uniformId;
 GLint model_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc, tex_normalMap_loc;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8; 
+GLint tex_cube_loc, tex_normalMap_loc;
 GLuint TextureArray[16];
 GLint texMode_uniformId, shadowMode_uniformId;
 

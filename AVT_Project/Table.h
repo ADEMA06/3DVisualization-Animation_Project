@@ -151,6 +151,7 @@ public:
 			}
 			builder.drawMesh(meshes[n], shader);
 		}
+		glUniform1i(diffMapCount_loc, 0);
 	}
 
 	void drawTable(VSShaderLib* shader, GLuint* textures, int offset, int scene_offset) {

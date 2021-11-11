@@ -4,6 +4,8 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 uniform mat4 m_Model;   //por causa do cubo para a skybox
+uniform mat4 m_View;
+
 
 
 uniform int instanced;
@@ -50,6 +52,7 @@ out Data {
 	vec3 eye;
 	vec3 lightDir;
 	vec2 tex_coord;
+	vec3 reflected;
 	vec2 sphere_coord;
 	vec3 skyboxTexCoord;
 } DataOut;
@@ -107,6 +110,11 @@ void main () {
 	spotlights[1].position = uni_spotlights[1].position;
 	spotlights[1].cutOff = uni_spotlights[1].cutOff;
 	spotlights[1].light_dir = vec3(uni_spotlights[1].position-pos);
+
+	if(texMode == 3){
+		DataOut.reflected = vec3 (transpose(m_View) * vec4 (vec3(reflect(-DataOut.eye, DataOut.normal)), 0.0)); //reflection vector in world coord
+		DataOut.reflected.x= -DataOut.reflected.x; // as texturas foram mapeadas no interior da skybox 
+	}
 
 	for(int i = 0; i < 6; i++) {
 		pointlights[i].lightDir = vec3(uni_pointlights[i].position - pos);

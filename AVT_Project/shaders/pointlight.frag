@@ -50,6 +50,7 @@ in SpotLight spotlights[2];
 
 in vec4 pos;
 
+uniform mat4 m_View;
 
 uniform int diffMapCount;
 uniform	sampler2D texUnitDiff;
@@ -59,6 +60,7 @@ in Data {
 	vec3 eye;
 	vec3 lightDir;
 	vec2 tex_coord;
+	vec3 reflected;
 	vec2 sphere_coord;
 	vec3 skyboxTexCoord;
 } DataIn;
@@ -173,7 +175,16 @@ void main() {
 
 
 		if(mat.texCount == 0){
-			colorOut = (light.diffuse + light.spec) + mat.ambient;	
+			if(texMode == 3){
+				vec4 cube_texel = texture(cubeMap, DataIn.reflected);
+				texel = texture(texmap1, DataIn.tex_coord);  // texel from lighwood.tga
+				vec4 aux_color = mix(texel, cube_texel, 0.9);
+				aux_color = max(light.diffuse*aux_color + light.spec, 0.1*aux_color);
+				colorOut = vec4(aux_color.rgb, 1.0); 
+			}
+			else{
+				colorOut = (light.diffuse + light.spec) + mat.ambient;
+			}
 		}
 		else if(mat.texCount == 1){
 			texel = texture(texmap0, DataIn.tex_coord);
@@ -209,7 +220,7 @@ void main() {
 		
 			if(texel.a == 0.0) discard;
 			else { 
-				vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + spec.rgb, 0.1*texel.rgb));
+				vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + light.spec.rgb, 0.1*texel.rgb));
 				colorOut = vec4(vec3(c), texel.a);
 			}
 			

@@ -312,6 +312,7 @@ public:
 				builder.drawMesh(meshes[n], shader);
 			}
 		}
+		glUniform1i(diffMapCount_loc, 0);
 
 	}
 
