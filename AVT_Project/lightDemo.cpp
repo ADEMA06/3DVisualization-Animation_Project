@@ -130,7 +130,7 @@ GLint lPos_uniformId;
 GLint model_uniformId;
 GLint dir_light_uniformId;
 GLint pause_on_Id;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8, tex_cube_loc, tex_normalMap_loc;
 GLuint TextureArray[16];
 GLint texMode_uniformId, shadowMode_uniformId;
 
@@ -646,6 +646,9 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[10]);
 
+	glActiveTexture(GL_TEXTURE13);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[13]);
+
 	glActiveTexture(GL_TEXTURE15);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[15]);
 
@@ -654,6 +657,9 @@ void renderScene(void) {
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc8, 8);
+	glUniform1i(tex_normalMap_loc, 13);
+
+	
 
 	if (table.getScenery() == 0) {
 		glUniform1i(tex_cube_loc, 10);
@@ -976,6 +982,8 @@ GLuint setupShaders() {
 	glBindAttribLocation(shader->getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader->getProgramIndex(), NORMAL_ATTRIB, "normal");
 	glBindAttribLocation(shader->getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader->getProgramIndex(), TANGENT_ATTRIB, "tangent");
+
 
 	glLinkProgram(shader->getProgramIndex());
 	texMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "texMode");
@@ -992,6 +1000,7 @@ GLuint setupShaders() {
 	tex_cube_loc = glGetUniformLocation(shader->getProgramIndex(), "cubeMap");
 	model_uniformId = glGetUniformLocation(shader->getProgramIndex(), "m_Model");
 	shadowMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "shadowMode");
+	tex_normalMap_loc = glGetUniformLocation(shader->getProgramIndex(), "normalMap");
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader->getAllInfoLogs().c_str());
 
 	shaderText->init();
@@ -1093,6 +1102,8 @@ void init()
 	const char* volcano_skybox[] = { "right_volc.jpg", "left_volc.jpg", "top_volc.jpg", "bottom_volc.jpg", "front_volc.jpg", "back_volc.jpg" };
 
 	TextureCubeMap_Loader(TextureArray, volcano_skybox, 10);
+
+	Texture2D_Loader(TextureArray, "sand_normal2.jpg", 13);
 	Texture2D_Loader(TextureArray, "sun.tga", 14);
 	Texture2D_Loader(TextureArray, "sand.jpg", 15);
 

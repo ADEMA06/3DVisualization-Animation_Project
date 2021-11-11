@@ -156,13 +156,16 @@ public:
 	void drawTable(VSShaderLib* shader, GLuint* textures, int offset, int scene_offset) {
 		MeshBuilder builder;
 		builder.setShaders(shader, base);
+		GLint texMode_uniformId = glGetUniformLocation(shader->getProgramIndex(), "texMode");
 		if (scene_offset + scenery == 1) {
 			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 15);
 			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 9);
+			glUniform1i(texMode_uniformId, 2);
 		}
 		else {
 			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "texmap0"), 0);
 			glUniform1i(glGetUniformLocation(shader->getProgramIndex(), "cubeMap"), 10);
+			glUniform1i(texMode_uniformId, 0);
 		}	
 		pushMatrix(MODEL);
 		translate(MODEL, -width / 2, -thickness, -height / 2);

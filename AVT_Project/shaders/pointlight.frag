@@ -147,7 +147,10 @@ void main() {
 	vec3 spot_dir2 = normalize(vec3(spotlights[1].direction));
 	vec3 e = normalize(DataIn.eye);
 
-	n = normalize(DataIn.normal);
+	if(texMode == 2)  // lookup normal from normal map, move from [0,1] to [-1, 1] range, normalize
+		n = normalize(2.0 * texture(normalMap, DataIn.tex_coord).rgb - 1.0);
+	else
+		n = normalize(DataIn.normal);
 
 	if(shadowMode == 1)  //constant color
 		colorOut = vec4(0.5, 0.5, 0.5, 1.0);
@@ -181,9 +184,16 @@ void main() {
 			colorOut = (light.diffuse + light.spec) * texel  + mat.ambient;
 		}
 		else if(mat.texCount == 3){
-			texel = texture(texmap2, DataIn.tex_coord);
-			texel1 = texture(texmap0, DataIn.tex_coord);
-			colorOut = (light.diffuse + light.spec) *  texel1 * texel  + mat.ambient;
+			if(texMode == 0){
+				texel = texture(texmap2, DataIn.tex_coord);
+				texel1 = texture(texmap0, DataIn.tex_coord);
+				colorOut = (light.diffuse + light.spec) *  texel1 * texel  + mat.ambient;
+			}
+			else {
+				texel = texture(texmap2, DataIn.tex_coord);
+				texel1 = texture(texmap0, DataIn.tex_coord);
+				colorOut = vec4((max(light.dirIntensity * texel * texel1 + light.spec / 3, 0.2*texel*texel1)).rgb, 1.0f);
+			}
 		}
 
 		else if(mat.texCount == 4){
@@ -198,7 +208,7 @@ void main() {
 			colorOut = (light.diffuse + light.spec) * texel + mat.ambient;
 		
 			if(texel.a == 0.0) discard;
-			else { //FIGURE THIS OUT
+			else { 
 				vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + spec.rgb, 0.1*texel.rgb));
 				colorOut = vec4(vec3(c), texel.a);
 			}
