@@ -131,7 +131,7 @@ GLint dir_light_uniformId;
 GLint pause_on_Id;
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc8; 
 GLint tex_cube_loc, tex_normalMap_loc;
-GLuint TextureArray[16];
+GLuint TextureArray[17];
 GLint texMode_uniformId, shadowMode_uniformId;
 
 
@@ -155,7 +155,7 @@ float dt = 0.0f;
 
 bool leftKey = false;
 bool isPassingFlag = false;
-bool flareOn = true;
+bool flareOn = false;
 
 
 //----------------Lights---------------------
@@ -653,6 +653,9 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE15);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[15]);
 
+	glActiveTexture(GL_TEXTURE16);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[16]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
@@ -748,13 +751,19 @@ void renderScene(void) {
 	}
 	drawSkybox(shader);
 	drawObjects(false, 0);
+	if (!table.getScenery())
+		glUniform1i(tex_loc8, 16);
+	else
+		glUniform1i(tex_loc8, 8);
+
 	for (auto bb : bbs) {
+		
 		bb.drawBillBoard(cameras[current_camera]->getPosition(), shader, 0);
 	}
 	
 	glClear(GL_STENCIL_BUFFER_BIT);
 
-	glStencilFunc(GL_NEVER, 0x1, 0x1);
+	glStencilFunc(GL_NEVER, 0x3, 0xFF);
 	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
 	drawShadowPlane(shader);
@@ -792,11 +801,13 @@ void renderScene(void) {
 	glUniform1i(shadowMode_uniformId, 0);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
 	vec3 cam_pos = cameras[current_camera]->getPosition();
 	vec3 cam_direction = vec3(car.getPosition().x - cam_pos.x, car.getPosition().y - cam_pos.y, car.getPosition().z - cam_pos.z);
+	glStencilFunc(GL_EQUAL, 3, 0x1);
 	road.draw(shader, cam_pos, cam_direction.normalize(), current_camera == 2);
 
-	glEnable(GL_DEPTH_TEST);
+
 
 
 
@@ -810,7 +821,7 @@ void renderScene(void) {
 	if(flareOn)drawFlare(shader);
 
 	popMatrix(VIEW);
-	glStencilFunc(GL_ALWAYS, 1, 0x1);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 
@@ -1090,11 +1101,12 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(16, TextureArray);
+	glGenTextures(17, TextureArray);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 0);
 	Texture2D_Loader(TextureArray, "vulcan.jpg", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "cactus.png", 8);
+	Texture2D_Loader(TextureArray, "vulrock.png", 16);
 	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 	//Sky Box Texture Object
@@ -1179,7 +1191,7 @@ void init()
 	oranges.push_back(orange5);
 
 	BillBoardObject bb1(vec3(40.0, 0.0, -30.0), 8);
-	BillBoardObject bb2(vec3(20.0, 0.0, -30.0), 8);
+	BillBoardObject bb2(vec3(50.0, 0.0, -15.0), 8);
 	BillBoardObject bb3(vec3(20.0, 0.0, 20.0), 8);
 	BillBoardObject bb4(vec3(40.0, 0.0, 30.0), 8);
 	BillBoardObject bb5(vec3(-40.0, 0.0, -30.0), 8);

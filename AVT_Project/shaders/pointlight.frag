@@ -220,7 +220,7 @@ void main() {
 		
 			if(texel.a == 0.0) discard;
 			else { 
-				vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + light.spec.rgb, 0.1*texel.rgb));
+				vec3 c = vec3(max((light.spotIntensity+light.dirIntensity+light.pointIntensity)*texel.rgb + (light.spec/3).rgb, 0.1*texel.rgb));
 				colorOut = vec4(vec3(c), texel.a);
 			}
 			
