@@ -290,13 +290,9 @@ public:
 			particles[i].az = 0.0f;
 
 			/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
-			/*particles[i].r = 0.882f;
+			particles[i].r = 0.882f;
 			particles[i].g = 0.552f;
-			particles[i].b = 0.211f;*/
-			
-			particles[i].r = 1.0f;
-			particles[i].g = 1.0f;
-			particles[i].b = 1.0f;
+			particles[i].b = 0.211f;
 
 			
 

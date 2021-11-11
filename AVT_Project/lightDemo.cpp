@@ -77,8 +77,6 @@ vec3 butter_pos(5.0f, 0.0f, 0.0f);
 
 vec3 orange_pos(5.0f, 0.0f, 5.0f);
 
-BillBoardObject bb(vec3(40.0, 0.0, -30.0), 8);
-
 Table table(100.0f, 100.0f, 0.8f, 0.5f, 10.0f, table_pos);
 Car car(car_pos, 2.5f, 20.0f, car_color, color_tire);
 Butter butter(butter_pos, butter_foil_color);
@@ -87,6 +85,7 @@ std::vector<Cheerio> cheerios;
 std::vector<Orange> oranges;
 
 vector<Candle> candles;
+vector<BillBoardObject> bbs;
 
 textToRender* lives;
 textToRender* pause;
@@ -156,6 +155,7 @@ float dt = 0.0f;
 
 bool leftKey = false;
 bool isPassingFlag = false;
+bool flareOn = true;
 
 
 //----------------Lights---------------------
@@ -542,7 +542,7 @@ void drawObjects(bool repeated, int scene_offset, int shadows = 0) {
 	}
 	points->text = "Points: " + to_string(static_cast<int>(car.getPoints()));
 	
-	drawFlare(shader);	
+	if(flareOn)drawFlare(shader);	
 
 	butter.drawButter(shader);
 	//car.drawBoundingBox(shader);
@@ -689,7 +689,6 @@ void renderScene(void) {
 	}
 
 	memcpy(backup_view, mMatrix[VIEW], 16 * sizeof(float));
-	glEnable(GL_CULL_FACE);
 
 	glStencilFunc(GL_EQUAL, 1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -749,7 +748,10 @@ void renderScene(void) {
 	}
 	drawSkybox(shader);
 	drawObjects(false, 0);
-	bb.drawBillBoard(cameras[current_camera]->getPosition(), shader, 0);
+	for (auto bb : bbs) {
+		bb.drawBillBoard(cameras[current_camera]->getPosition(), shader, 0);
+	}
+	
 	glClear(GL_STENCIL_BUFFER_BIT);
 
 	glStencilFunc(GL_NEVER, 0x1, 0x1);
@@ -789,7 +791,7 @@ void renderScene(void) {
 	popMatrix(MODEL);
 	glUniform1i(shadowMode_uniformId, 0);
 
-
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	vec3 cam_pos = cameras[current_camera]->getPosition();
 	vec3 cam_direction = vec3(car.getPosition().x - cam_pos.x, car.getPosition().y - cam_pos.y, car.getPosition().z - cam_pos.z);
 	road.draw(shader, cam_pos, cam_direction.normalize(), current_camera == 2);
@@ -805,9 +807,7 @@ void renderScene(void) {
 	glEnable(GL_CULL_FACE);
 	popMatrix(MODEL);
 
-	drawFlare(shader);
-	
-	
+	if(flareOn)drawFlare(shader);
 
 	popMatrix(VIEW);
 	glStencilFunc(GL_ALWAYS, 1, 0x1);
@@ -863,6 +863,8 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'p': keys['p'] = true; break;
 
 	case 'e': table.Erupt(); break;
+
+	case 'f': flareOn = !flareOn; break;
 
 		//Reset game
 	case 'r': if (isGameOver) resetGame(); break;
@@ -1176,7 +1178,24 @@ void init()
 	oranges.push_back(orange4);
 	oranges.push_back(orange5);
 
-	bb.createBillBoard();
+	BillBoardObject bb1(vec3(40.0, 0.0, -30.0), 8);
+	BillBoardObject bb2(vec3(20.0, 0.0, -30.0), 8);
+	BillBoardObject bb3(vec3(20.0, 0.0, 20.0), 8);
+	BillBoardObject bb4(vec3(40.0, 0.0, 30.0), 8);
+	BillBoardObject bb5(vec3(-40.0, 0.0, -30.0), 8);
+
+	bb1.createBillBoard();
+	bb2.createBillBoard();
+	bb3.createBillBoard();
+	bb4.createBillBoard();
+	bb5.createBillBoard();
+
+	bbs.push_back(bb1);
+	bbs.push_back(bb2);
+	bbs.push_back(bb3);
+	bbs.push_back(bb4);
+	bbs.push_back(bb5);
+
 
 	MyMesh amesh;
 	float height = 10.0f;

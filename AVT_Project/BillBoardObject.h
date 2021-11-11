@@ -72,7 +72,7 @@ public:
 		l3dBillboardCylindricalBegin(cam, world_pos);
 
 		pushMatrix(MODEL);
-		translate(MODEL, 0.0, 3.0, 0.0f);
+		translate(MODEL, 0.0, 2.0, 0.0f);
 		builder.drawMesh(quad, shader);
 		popMatrix(MODEL);
 		popMatrix(MODEL);

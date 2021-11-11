@@ -52,7 +52,7 @@ class Car : public MovableObject {
 	//Vector moved after update
 	vec3 offset;
 
-	int lives = 100;
+	int lives = 5;
 	float points = 0;
 
 public:
